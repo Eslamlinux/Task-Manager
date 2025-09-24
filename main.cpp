@@ -677,3 +677,156 @@ void SearchDialog::OnFieldChoice(wxCommandEvent& event) {
   // You could add logic here to enable/disable search text based on field choice
 }
 
+bool SearchDialog::PerformSearch() {
+  wxString searchText = searchCtrl->GetValue().Trim();
+  int fieldIndex = fieldChoice->GetSelection();
+  int priorityIndex = priorityChoice->GetSelection();
+  wxDateTime fromDate = fromDateCtrl->GetValue();
+  wxDateTime toDate = toDateCtrl->GetValue();
+  bool includeCompleted = includeCompletedCtrl->GetValue();
+  
+  // Get selected category ID
+  int categoryId = -1;
+  int selection = categoryCombo->GetSelection();
+  if (selection != wxNOT_FOUND) {
+      categoryId = (int)(wxIntPtr)categoryCombo->GetClientData(selection);
+  }
+  
+  // Convert dates to ISO format
+  wxString fromDateStr = fromDate.FormatISODate();
+  wxString toDateStr = toDate.FormatISODate();
+  
+  // Build SQL query
+  wxString sql = 
+      "SELECT t.id, t.title, t.description, t.due_date, t.priority, t.completed, "
+      "t.category_id, c.name as category_name, c.color as category_color "
+      "FROM tasks t "
+      "LEFT JOIN categories c ON t.category_id = c.id "
+      "WHERE t.user_id = ? ";
+  
+  // Search text condition
+  if (!searchText.IsEmpty()) {
+      switch(fieldIndex) {
+          case 0: // Title
+              sql += "AND t.title LIKE ? ";
+              break;
+          case 1: // Description
+              sql += "AND t.description LIKE ? ";
+              break;
+          case 2: // All Fields
+              sql += "AND (t.title LIKE ? OR t.description LIKE ?) ";
+              break;
+      }
+  }
+  
+  // Priority condition
+  if (priorityIndex > 0) {
+      sql += "AND t.priority = ? ";
+  }
+  
+  // Date range condition
+  sql += "AND t.due_date BETWEEN ? AND ? ";
+  
+  // Category condition
+  if (categoryId == 0) { // No Category
+      sql += "AND t.category_id IS NULL ";
+  } else if (categoryId > 0) { // Specific Category
+      sql += "AND t.category_id = ? ";
+  }
+  
+  // Completed status condition
+  if (!includeCompleted) {
+      sql += "AND t.completed = 0 ";
+  }
+  
+  sql += "ORDER BY t.due_date, t.priority DESC";
+  
+  try {
+      wxSQLite3Statement stmt = dbManager->GetDatabase()->PrepareStatement(sql);
+      int paramIndex = 1;
+      
+      // Bind user ID
+      stmt.Bind(paramIndex++, userId);
+      
+      // Bind search text
+      if (!searchText.IsEmpty()) {
+          wxString likePattern = "%" + searchText + "%";
+          stmt.Bind(paramIndex++, likePattern);
+          
+          if (fieldIndex == 2) { // All Fields - need to bind twice
+              stmt.Bind(paramIndex++, likePattern);
+          }
+      }
+      
+      // Bind priority
+      if (priorityIndex > 0) {
+          stmt.Bind(paramIndex++, priorityIndex);
+      }
+      
+      // Bind date range
+      stmt.Bind(paramIndex++, fromDateStr);
+      stmt.Bind(paramIndex++, toDateStr);
+      
+      // Bind category ID
+      if (categoryId > 0) {
+          stmt.Bind(paramIndex++, categoryId);
+      }
+      
+      wxSQLite3ResultSet resultSet = stmt.ExecuteQuery();
+      
+      searchResults->clear();
+      
+      while (resultSet.NextRow()) {
+          Task task;
+          task.id = resultSet.GetAsInt(0);
+          task.title = resultSet.GetAsString(1);
+          task.description = resultSet.GetAsString(2);
+          task.dueDate = resultSet.GetAsString(3);
+          task.priority = resultSet.GetAsInt(4);
+          task.completed = resultSet.GetAsInt(5) != 0;
+          task.categoryId = resultSet.IsNull(6) ? -1 : resultSet.GetAsInt(6);
+          task.categoryName = resultSet.IsNull(7) ? "No Category" : resultSet.GetAsString(7);
+          task.categoryColor = resultSet.IsNull(8) ? "#FFFFFF" : resultSet.GetAsString(8);
+          task.userId = userId;
+          
+          searchResults->push_back(task);
+      }
+      
+      return true;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Search error: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Search Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+}
+
+void SearchDialog::OnSearchButton(wxCommandEvent& event) {
+  if (PerformSearch()) {
+      EndModal(wxID_OK);
+  }
+}
+
+void SearchDialog::OnCancelButton(wxCommandEvent& event) {
+  EndModal(wxID_CANCEL);
+}
+
+// Application initialization
+bool TaskManagerApp::OnInit() {
+  if (!wxApp::OnInit())
+      return false;
+
+  std::cout << "TaskManagerApp::OnInit() - Starting application" << std::endl;
+
+  // Initialize database
+  dbManager = std::make_unique<DatabaseManager>();
+  if (!dbManager->Connect("taskmanager.db")) {
+      wxMessageBox("Failed to connect to database.", "Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+  
+  std::cout << "Database connected successfully" << std::endl;
+  
+  // Initialize user manager
+  std::cout << "Initializing user manager" << std::endl;
+  userManager = std::make_unique<UserManager>(dbManager->GetDatabase());
