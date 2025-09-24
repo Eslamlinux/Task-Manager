@@ -1689,3 +1689,55 @@ void MainFrame::OnImportTasks(wxCommandEvent& event) {
           }
       }
       
+      // Completed
+      if (!tokenizer.HasMoreTokens()) continue;
+      wxString completedStr = tokenizer.GetNextToken();
+      bool completed = (completedStr == "Yes" || completedStr == "yes" || 
+                       completedStr == "TRUE" || completedStr == "true" || 
+                       completedStr == "1");
+      
+      // Add task to database
+      if (dbManager->AddTask(title, description, dueDate, priority, categoryId, 
+                           userManager->GetCurrentUser()->id)) {
+          successCount++;
+      } else {
+          skipCount++;
+      }
+  }
+  
+  wxMessageBox(wxString::Format("Import complete. %d tasks imported, %d skipped.", 
+                              successCount, skipCount), 
+              "Import Results", wxOK | wxICON_INFORMATION);
+  
+  // Reload tasks
+  LoadTasks();
+  UpdateDashboardStatistics();
+}
+
+void MainFrame::OnLogout(wxCommandEvent& event) {
+  wxMessageDialog confirmDlg(this, "Are you sure you want to logout?", 
+                           "Confirm Logout", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+  
+  if (confirmDlg.ShowModal() == wxID_YES) {
+      userManager->Logout();
+      
+      // Close current frame and show login dialog
+      Hide();
+      
+      LoginDialog loginDlg(nullptr, userManager);
+      if (loginDlg.ShowModal() == wxID_OK) {
+          // Reload data for new user
+          LoadCategories();
+          LoadTasks();
+          UpdateDashboardStatistics();
+          
+          // Update status bar
+          SetStatusText(wxString::Format("Logged in as: %s", userManager->GetCurrentUser()->username));
+          
+          Show();
+      } else {
+          // User cancelled login, close application
+          Close(true);
+      }
+  }
+}
