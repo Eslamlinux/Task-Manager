@@ -1496,3 +1496,114 @@ void MainFrame::OnUpdateTask(wxCommandEvent& event) {
   }
 }
 
+void MainFrame::OnDeleteTask(wxCommandEvent& event) {
+  if (selectedTaskId < 0) {
+      return;
+  }
+  
+  wxMessageDialog dialog(this, "Are you sure you want to delete this task?", 
+      "Confirm Deletion", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+  
+  if (dialog.ShowModal() == wxID_YES) {
+      if (dbManager->DeleteTask(selectedTaskId)) {
+          wxMessageBox("Task deleted successfully.", "Success", wxOK | wxICON_INFORMATION);
+          ClearForm();
+          LoadTasks();
+          UpdateDashboardStatistics();
+      }
+  }
+}
+
+void MainFrame::OnTaskDetail(wxGridEvent& event) {
+  int row = event.GetRow();
+  
+  if (row >= 0 && row < static_cast<int>(tasks.size())) {
+      Task& task = tasks[row];
+      
+      TaskDetailDialog dlg(this, &task, dbManager, categoryManager, 
+                         userManager->GetCurrentUser()->id);
+      if (dlg.ShowModal() == wxID_OK) {
+          LoadTasks();
+          UpdateDashboardStatistics();
+      }
+  }
+}
+
+void MainFrame::OnExportTasks(wxCommandEvent& event) {
+  wxFileDialog saveFileDialog(this, "Export Tasks", "", "",
+                             "CSV files (*.csv)|*.csv", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+  
+  if (saveFileDialog.ShowModal() == wxID_CANCEL) {
+      return;
+  }
+  
+  wxString filePath = saveFileDialog.GetPath();
+  
+  wxFileOutputStream output(filePath);
+  if (!output.IsOk()) {
+      wxLogError("Cannot save to file '%s'.", filePath);
+      return;
+  }
+  
+  wxTextOutputStream text(output);
+  
+  // Write header
+  text << "ID,Title,Description,Due Date,Priority,Category,Completed\n";
+  
+  // Write tasks
+  for (const auto& task : tasks) {
+      // Format fields properly for CSV
+      wxString title = task.title;
+      title.Replace("\"", "\"\"");  // Escape quotes
+      
+      wxString description = task.description;
+      description.Replace("\"", "\"\"");
+      
+      wxString categoryName = task.categoryName;
+      categoryName.Replace("\"", "\"\"");
+      
+      text << task.id << ","
+           << "\"" << title << "\","
+           << "\"" << description << "\","
+           << task.dueDate << ","
+           << task.priority << ","
+           << "\"" << categoryName << "\","
+           << (task.completed ? "Yes" : "No") << "\n";
+  }
+  
+  wxMessageBox(wxString::Format("Successfully exported %zu tasks to %s", 
+                              tasks.size(), filePath), 
+              "Export Complete", wxOK | wxICON_INFORMATION);
+}
+
+void MainFrame::OnImportTasks(wxCommandEvent& event) {
+  wxFileDialog openFileDialog(this, "Import Tasks", "", "",
+                             "CSV files (*.csv)|*.csv", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+  
+  if (openFileDialog.ShowModal() == wxID_CANCEL) {
+      return;
+  }
+  
+  wxString filePath = openFileDialog.GetPath();
+
+  wxFileInputStream input(filePath);
+  if (!input.IsOk()) {
+      wxLogError("Cannot open file '%s'.", filePath);
+      return;
+  }
+
+  wxTextInputStream text(input);
+
+  // Add this warning message before processing the CSV
+  wxMessageBox("Note: The CSV import has limitations with handling quoted fields containing commas. "
+              "Please ensure your CSV file uses simple formatting.",
+              "Import Notice", wxOK | wxICON_INFORMATION);
+  
+  // Skip header
+  if (!input.Eof()) {
+      wxString line = text.ReadLine();
+  }
+  
+  int successCount = 0;
+  int skipCount = 0;
+  
