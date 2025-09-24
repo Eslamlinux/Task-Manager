@@ -1607,3 +1607,85 @@ void MainFrame::OnImportTasks(wxCommandEvent& event) {
   int successCount = 0;
   int skipCount = 0;
   
+  // Process each line
+  while (!input.Eof()) {
+      wxString line = text.ReadLine();
+      if (line.IsEmpty()) continue;
+      
+      // Parse CSV line
+      wxStringTokenizer tokenizer(line, ",", wxTOKEN_RET_EMPTY_ALL);
+      
+      // Skip ID field
+      if (!tokenizer.HasMoreTokens()) continue;
+      tokenizer.GetNextToken();
+      
+      // Title
+      if (!tokenizer.HasMoreTokens()) continue;
+      wxString title = tokenizer.GetNextToken();
+      // Remove quotes if present
+      if (title.StartsWith("\"") && title.EndsWith("\"")) {
+          title = title.SubString(1, title.Length() - 2);
+      }
+      title.Replace("\"\"", "\"");  // Unescape quotes
+      
+      // Description
+      if (!tokenizer.HasMoreTokens()) continue;
+      wxString description = tokenizer.GetNextToken();
+      // Remove quotes if present
+      if (description.StartsWith("\"") && description.EndsWith("\"")) {
+          description = description.SubString(1, description.Length() - 2);
+      }
+      description.Replace("\"\"", "\"");  // Unescape quotes
+      
+      // Due Date
+      if (!tokenizer.HasMoreTokens()) continue;
+      wxString dueDate = tokenizer.GetNextToken();
+      
+      // Priority
+      if (!tokenizer.HasMoreTokens()) continue;
+      wxString priorityStr = tokenizer.GetNextToken();
+      long priority;
+      if (!priorityStr.ToLong(&priority) || priority < 1 || priority > 5) {
+          priority = 1;
+      }
+      
+      // Category
+      if (!tokenizer.HasMoreTokens()) continue;
+      wxString categoryName = tokenizer.GetNextToken();
+      // Remove quotes if present
+      if (categoryName.StartsWith("\"") && categoryName.EndsWith("\"")) {
+          categoryName = categoryName.SubString(1, categoryName.Length() - 2);
+      }
+      categoryName.Replace("\"\"", "\"");  // Unescape quotes
+      
+      // Find category ID or create new category
+      int categoryId = -1;
+      if (categoryName != "No Category") {
+          bool found = false;
+          for (const auto& category : categories) {
+              if (category.name == categoryName) {
+                  categoryId = category.id;
+                  found = true;
+                  break;
+              }
+          }
+          
+          if (!found) {
+              // Create new category
+              wxColour randomColor(rand() % 200 + 55, rand() % 200 + 55, rand() % 200 + 55);
+              wxString colorStr = randomColor.GetAsString(wxC2S_HTML_SYNTAX);
+              
+              if (categoryManager->AddCategory(categoryName, colorStr, "", 
+                                            userManager->GetCurrentUser()->id)) {
+                  // Reload categories to get the new ID
+                  LoadCategories();
+                  for (const auto& category : categories) {
+                      if (category.name == categoryName) {
+                          categoryId = category.id;
+                          break;
+                      }
+                  }
+              }
+          }
+      }
+      
