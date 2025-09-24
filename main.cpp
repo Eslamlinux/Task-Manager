@@ -459,3 +459,221 @@ TaskDetailDialog::TaskDetailDialog(wxWindow* parent, Task* task, DatabaseManager
 TaskDetailDialog::~TaskDetailDialog() {
 }
 
+void TaskDetailDialog::LoadCategories() {
+  categories = categoryManager->GetAllCategories(userId);
+  
+  // Add 'No Category' option
+  categoryCombo->Append("No Category", (void*)-1);
+  
+  for (const auto& category : categories) {
+      categoryCombo->Append(category.name, (void*)(wxIntPtr)category.id);
+  }
+  
+  // Select current category
+  int selection = 0; // Default to 'No Category'
+  for (size_t i = 0; i < categories.size(); ++i) {
+      if (categories[i].id == task->categoryId) {
+          selection = i + 1; // +1 because 'No Category' is at index 0
+          break;
+      }
+  }
+  categoryCombo->SetSelection(selection);
+}
+
+void TaskDetailDialog::OnSaveButton(wxCommandEvent& event) {
+  wxString title = titleCtrl->GetValue().Trim();
+  wxString description = descriptionCtrl->GetValue().Trim();
+  wxDateTime dueDate = dueDateCtrl->GetValue();
+  int priority = priorityCtrl->GetValue();
+  bool completed = completedCtrl->GetValue();
+  
+  // Get selected category ID
+  int categoryId = -1;
+  int selection = categoryCombo->GetSelection();
+  if (selection != wxNOT_FOUND) {
+      categoryId = (int)(wxIntPtr)categoryCombo->GetClientData(selection);
+  }
+  
+  if (title.IsEmpty()) {
+      wxMessageBox("Title cannot be empty.", "Validation Error", wxOK | wxICON_ERROR, this);
+      titleCtrl->SetFocus();
+      return;
+  }
+  
+  wxString dueDateStr = dueDate.FormatISODate();
+  
+  // Update task object
+  task->title = title;
+  task->description = description;
+  task->dueDate = dueDateStr;
+  task->priority = priority;
+  task->completed = completed;
+  task->categoryId = categoryId;
+  
+  // Update task in database if it already exists
+  if (task->id > 0) {
+      if (!dbManager->UpdateTask(task->id, title, description, dueDateStr, priority, completed, categoryId)) {
+          wxMessageBox("Failed to update task.", "Error", wxOK | wxICON_ERROR, this);
+          return;
+      }
+  }
+  
+  EndModal(wxID_OK);
+}
+
+void TaskDetailDialog::OnCancelButton(wxCommandEvent& event) {
+  EndModal(wxID_CANCEL);
+}
+
+// Search Dialog
+class SearchDialog : public wxDialog {
+private:
+  wxTextCtrl* searchCtrl;
+  wxChoice* fieldChoice;
+  wxChoice* priorityChoice;
+  wxDatePickerCtrl* fromDateCtrl;
+  wxDatePickerCtrl* toDateCtrl;
+  wxCheckBox* includeCompletedCtrl;
+  wxComboBox* categoryCombo;
+  
+  DatabaseManager* dbManager;
+  CategoryManager* categoryManager;
+  int userId;
+  std::vector<Category> categories;
+  
+  std::vector<Task>* searchResults;
+  
+  void OnSearchButton(wxCommandEvent& event);
+  void OnCancelButton(wxCommandEvent& event);
+  void OnFieldChoice(wxCommandEvent& event);
+  
+  void LoadCategories();
+  
+public:
+  SearchDialog(wxWindow* parent, DatabaseManager* dbManager, 
+              CategoryManager* categoryManager, int userId, 
+              std::vector<Task>* results);
+  virtual ~SearchDialog();
+  
+  bool PerformSearch();
+  
+  wxDECLARE_EVENT_TABLE();
+};
+
+wxBEGIN_EVENT_TABLE(SearchDialog, wxDialog)
+  EVT_BUTTON(wxID_FIND, SearchDialog::OnSearchButton)
+  EVT_BUTTON(wxID_CANCEL, SearchDialog::OnCancelButton)
+  EVT_CHOICE(wxID_ANY, SearchDialog::OnFieldChoice)
+wxEND_EVENT_TABLE()
+
+SearchDialog::SearchDialog(wxWindow* parent, DatabaseManager* dbManager, 
+                       CategoryManager* categoryManager, int userId, 
+                       std::vector<Task>* results)
+  : wxDialog(parent, wxID_ANY, "Search Tasks", wxDefaultPosition, wxSize(450, 400),
+            wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+    dbManager(dbManager), categoryManager(categoryManager), 
+    userId(userId), searchResults(results) {
+  
+  wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+  
+  // Search form
+  wxFlexGridSizer* formSizer = new wxFlexGridSizer(7, 2, 10, 10);
+  formSizer->AddGrowableCol(1);
+  
+  // Search Field
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Search in:"), 0, wxALIGN_CENTER_VERTICAL);
+  wxArrayString fieldChoices;
+  fieldChoices.Add("Title");
+  fieldChoices.Add("Description");
+  fieldChoices.Add("All Fields");
+  fieldChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, fieldChoices);
+  fieldChoice->SetSelection(0);
+  formSizer->Add(fieldChoice, 0, wxEXPAND);
+  
+  // Search Text
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Search for:"), 0, wxALIGN_CENTER_VERTICAL);
+  searchCtrl = new wxTextCtrl(this, wxID_ANY);
+  formSizer->Add(searchCtrl, 0, wxEXPAND);
+  
+  // Priority
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Priority:"), 0, wxALIGN_CENTER_VERTICAL);
+  wxArrayString priorityChoices;
+  priorityChoices.Add("Any");
+  priorityChoices.Add("1 - Low");
+  priorityChoices.Add("2");
+  priorityChoices.Add("3 - Medium");
+  priorityChoices.Add("4");
+  priorityChoices.Add("5 - High");
+  priorityChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, priorityChoices);
+  priorityChoice->SetSelection(0);
+  formSizer->Add(priorityChoice, 0, wxEXPAND);
+  
+  // Date Range
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "From Date:"), 0, wxALIGN_CENTER_VERTICAL);
+  wxDateTime fromDate = wxDateTime::Today().Subtract(wxDateSpan::Days(30));
+  fromDateCtrl = new wxDatePickerCtrl(this, wxID_ANY, fromDate);
+  formSizer->Add(fromDateCtrl, 0, wxEXPAND);
+  
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "To Date:"), 0, wxALIGN_CENTER_VERTICAL);
+  wxDateTime toDate = wxDateTime::Today().Add(wxDateSpan::Days(30));
+  toDateCtrl = new wxDatePickerCtrl(this, wxID_ANY, toDate);
+  formSizer->Add(toDateCtrl, 0, wxEXPAND);
+  
+  // Category
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Category:"), 0, wxALIGN_CENTER_VERTICAL);
+  categoryCombo = new wxComboBox(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, 
+                                0, NULL, wxCB_DROPDOWN | wxCB_READONLY);
+  formSizer->Add(categoryCombo, 0, wxEXPAND);
+  
+  // Include Completed
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Status:"), 0, wxALIGN_CENTER_VERTICAL);
+  includeCompletedCtrl = new wxCheckBox(this, wxID_ANY, "Include completed tasks");
+  includeCompletedCtrl->SetValue(true);
+  formSizer->Add(includeCompletedCtrl, 0);
+  
+  mainSizer->Add(formSizer, 0, wxALL | wxEXPAND, 10);
+  
+  // Buttons
+  wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+  
+  wxButton* searchButton = new wxButton(this, wxID_FIND, "Search");
+  wxButton* cancelButton = new wxButton(this, wxID_CANCEL, "Cancel");
+  
+  buttonSizer->AddStretchSpacer();
+  buttonSizer->Add(searchButton, 0, wxRIGHT, 5);
+  buttonSizer->Add(cancelButton, 0);
+  
+  mainSizer->Add(buttonSizer, 0, wxALL | wxEXPAND, 10);
+  
+  SetSizer(mainSizer);
+  
+  // Load categories
+  LoadCategories();
+  
+  searchCtrl->SetFocus();
+  searchButton->SetDefault();
+}
+
+SearchDialog::~SearchDialog() {
+}
+
+void SearchDialog::LoadCategories() {
+  categories = categoryManager->GetAllCategories(userId);
+  
+  // Add 'Any Category' option
+  categoryCombo->Append("Any Category", (void*)-1);
+  
+  // Add 'No Category' option
+  categoryCombo->Append("No Category", (void*)0);
+  
+  for (const auto& category : categories) {
+      categoryCombo->Append(category.name, (void*)(wxIntPtr)category.id);
+  }
+  
+  categoryCombo->SetSelection(0); // Default to 'Any Category'
+}
+
+void SearchDialog::OnFieldChoice(wxCommandEvent& event) {
+  // You could add logic here to enable/disable search text based on field choice
+}
+
