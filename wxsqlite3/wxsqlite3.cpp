@@ -233,3 +233,38 @@ wxSQLite3Statement wxSQLite3Database::PrepareStatement(const wxString& sql) {
     return wxSQLite3Statement(stmt, this);
 }
 
+wxSQLite3ResultSet wxSQLite3Database::ExecuteQuery(const wxString& sql) {
+    wxSQLite3Statement stmt = PrepareStatement(sql);
+    
+    if (!stmt.IsValid()) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Could not prepare statement");
+    }
+    
+    int rc = sqlite3_step(stmt.m_stmt);
+    
+    if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
+        wxString errmsg = wxString::FromUTF8(sqlite3_errmsg(m_db));
+        throw wxSQLite3Exception(rc, errmsg);
+    }
+    
+    return wxSQLite3ResultSet(stmt.m_stmt, this);
+}
+
+int wxSQLite3Database::ExecuteUpdate(const wxString& sql) {
+    if (m_db == nullptr) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Database not open");
+    }
+    
+    wxCharBuffer sqlBuffer = sql.ToUTF8();
+    char* errmsg = nullptr;
+    
+    int rc = sqlite3_exec(m_db, sqlBuffer, nullptr, nullptr, &errmsg);
+    
+    if (rc != SQLITE_OK) {
+        wxString error = wxString::FromUTF8(errmsg);
+        sqlite3_free(errmsg);
+        throw wxSQLite3Exception(rc, error);
+    }
+    
+    return sqlite3_changes(m_db);
+}
