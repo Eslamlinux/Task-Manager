@@ -1381,3 +1381,118 @@ void MainFrame::DisplayRecentTasks() {
   }
 }
 
+void MainFrame::ClearForm() {
+  titleCtrl->Clear();
+  descriptionCtrl->Clear();
+  dueDateCtrl->SetValue(wxDateTime::Today());
+  priorityCtrl->SetValue(1);
+  completedCtrl->SetValue(false);
+  categoryCombo->SetSelection(0); // Set to "No Category"
+  
+  selectedTaskId = -1;
+  updateButton->Disable();
+  deleteButton->Disable();
+  addButton->Enable();
+}
+
+void MainFrame::OnTaskSelect(wxGridEvent& event) {
+  int row = event.GetRow();
+  
+  // Add bounds checking
+  if (row < 0 || row >= static_cast<int>(tasks.size())) {
+      event.Skip();
+      return;
+  }
+  
+  const Task& task = tasks[row];
+  
+  selectedTaskId = task.id;
+  titleCtrl->SetValue(task.title);
+  descriptionCtrl->SetValue(task.description);
+  
+  wxDateTime dueDate;
+  dueDate.ParseISODate(task.dueDate);
+  dueDateCtrl->SetValue(dueDate);
+  
+  priorityCtrl->SetValue(task.priority);
+  completedCtrl->SetValue(task.completed);
+  
+  // Select appropriate category
+  int selection = 0; // Default to "No Category"
+  for (size_t i = 0; i < categories.size(); ++i) {
+      if (categories[i].id == task.categoryId) {
+          selection = i + 1; // +1 because "No Category" is at index 0
+          break;
+      }
+  }
+  categoryCombo->SetSelection(selection);
+  
+  updateButton->Enable();
+  deleteButton->Enable();
+  addButton->Disable();
+  
+  event.Skip();
+}
+
+void MainFrame::OnAddTask(wxCommandEvent& event) {
+  wxString title = titleCtrl->GetValue().Trim();
+  wxString description = descriptionCtrl->GetValue().Trim();
+  wxDateTime dueDate = dueDateCtrl->GetValue();
+  int priority = priorityCtrl->GetValue();
+  
+  // Get selected category ID
+  int categoryId = -1;
+  int selection = categoryCombo->GetSelection();
+  if (selection != wxNOT_FOUND) {
+      categoryId = (int)(wxIntPtr)categoryCombo->GetClientData(selection);
+  }
+  
+  if (title.IsEmpty()) {
+      wxMessageBox("Title cannot be empty.", "Validation Error", wxOK | wxICON_ERROR);
+      return;
+  }
+  
+  wxString dueDateStr = dueDate.FormatISODate();
+  
+  if (dbManager->AddTask(title, description, dueDateStr, priority, categoryId, 
+                       userManager->GetCurrentUser()->id)) {
+      wxMessageBox("Task added successfully.", "Success", wxOK | wxICON_INFORMATION);
+      ClearForm();
+      LoadTasks();
+      UpdateDashboardStatistics();
+  }
+}
+
+void MainFrame::OnUpdateTask(wxCommandEvent& event) {
+  if (selectedTaskId < 0) {
+      return;
+  }
+  
+  wxString title = titleCtrl->GetValue().Trim();
+  wxString description = descriptionCtrl->GetValue().Trim();
+  wxDateTime dueDate = dueDateCtrl->GetValue();
+  int priority = priorityCtrl->GetValue();
+  bool completed = completedCtrl->GetValue();
+  
+  // Get selected category ID
+  int categoryId = -1;
+  int selection = categoryCombo->GetSelection();
+  if (selection != wxNOT_FOUND) {
+      categoryId = (int)(wxIntPtr)categoryCombo->GetClientData(selection);
+  }
+  
+  if (title.IsEmpty()) {
+      wxMessageBox("Title cannot be empty.", "Validation Error", wxOK | wxICON_ERROR);
+      return;
+  }
+  
+  wxString dueDateStr = dueDate.FormatISODate();
+  
+  if (dbManager->UpdateTask(selectedTaskId, title, description, dueDateStr, priority, completed, categoryId)) {
+      wxMessageBox("Task updated successfully.", "Success", wxOK | wxICON_INFORMATION);
+      ClearForm();
+      LoadTasks();
+      UpdateDashboardStatistics();
+  }
+}
+
