@@ -206,3 +206,68 @@ public:
       }
   }
 
+  bool DeleteTask(int id) {
+      try {
+          wxSQLite3Statement stmt = db.PrepareStatement("DELETE FROM tasks WHERE id = ?");
+          stmt.Bind(1, id);
+          stmt.ExecuteUpdate();
+          return true;
+      } catch (wxSQLite3Exception& e) {
+          std::cerr << "Database error: " << e.GetMessage().ToStdString() << std::endl;
+          wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+          return false;
+      }
+  }
+
+  ~DatabaseManager() {
+      if (isConnected) {
+          db.Close();
+      }
+  }
+};
+
+// Main application class
+class TaskManagerApp : public wxApp {
+private:
+  std::unique_ptr<DatabaseManager> dbManager;
+  std::unique_ptr<UserManager> userManager;
+  std::unique_ptr<CategoryManager> categoryManager;
+
+public:
+  virtual bool OnInit() override;
+};
+
+// Forward declaration for TaskDetailDialog
+class TaskDetailDialog;
+
+// Main frame class
+class MainFrame : public wxFrame {
+private:
+  wxNotebook* notebook;
+  wxPanel* dashboardPanel;
+  wxPanel* tasksPanel;
+  wxPanel* settingsPanel;
+  
+  wxGrid* tasksGrid;
+  wxTextCtrl* titleCtrl;
+  wxTextCtrl* descriptionCtrl;
+  wxDatePickerCtrl* dueDateCtrl;
+  wxSpinCtrl* priorityCtrl;
+  wxCheckBox* completedCtrl;
+  wxComboBox* categoryCombo;
+  wxButton* addButton;
+  wxButton* updateButton;
+  wxButton* deleteButton;
+  
+  wxMenuItem* logoutMenuItem;
+  wxMenuItem* profileMenuItem;
+  wxMenuItem* categoriesMenuItem;
+  
+  DatabaseManager* dbManager;
+  UserManager* userManager;
+  CategoryManager* categoryManager;
+  
+  std::vector<Task> tasks;
+  std::vector<Category> categories;
+  int selectedTaskId;
+  
