@@ -830,3 +830,111 @@ bool TaskManagerApp::OnInit() {
   // Initialize user manager
   std::cout << "Initializing user manager" << std::endl;
   userManager = std::make_unique<UserManager>(dbManager->GetDatabase());
+  
+  // Show login dialog
+  std::cout << "Showing login dialog" << std::endl;
+  LoginDialog loginDlg(nullptr, userManager.get());
+  if (loginDlg.ShowModal() != wxID_OK) {
+      // User cancelled login
+      std::cout << "User cancelled login" << std::endl;
+      return false;
+  }
+  
+  std::cout << "Login successful" << std::endl;
+  
+  // Initialize category manager
+  std::cout << "Initializing category manager" << std::endl;
+  categoryManager = std::make_unique<CategoryManager>(dbManager->GetDatabase());
+
+  // Create main frame
+  std::cout << "Creating main frame" << std::endl;
+  MainFrame* frame = new MainFrame("Task Manager", dbManager.get(), userManager.get(), categoryManager.get());
+  frame->Show(true);
+  
+  std::cout << "Application initialization complete" << std::endl;
+  return true;
+}
+
+// Main frame implementation
+MainFrame::MainFrame(const wxString& title, DatabaseManager* dbManager, 
+                 UserManager* userManager, CategoryManager* categoryManager)
+  : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxSize(900, 700)),
+    dbManager(dbManager), userManager(userManager), categoryManager(categoryManager), 
+    selectedTaskId(-1) {
+  
+  std::cout << "MainFrame constructor - Creating menu bar" << std::endl;
+  // Create menu bar
+  CreateMenuBar();
+  
+  // Create status bar
+  CreateStatusBar();
+  SetStatusText(wxString::Format("Logged in as: %s", userManager->GetCurrentUser()->username));
+  
+  std::cout << "Creating notebook with tabs" << std::endl;
+  // Create notebook with tabs
+  notebook = new wxNotebook(this, wxID_ANY);
+  
+  // Create panels for each tab
+  dashboardPanel = new wxPanel(notebook);
+  tasksPanel = new wxPanel(notebook);
+  settingsPanel = new wxPanel(notebook);
+  
+  // Add panels to notebook
+  notebook->AddPage(dashboardPanel, "Dashboard");
+  notebook->AddPage(tasksPanel, "Tasks");
+  notebook->AddPage(settingsPanel, "Settings");
+  
+  std::cout << "Creating content for each panel" << std::endl;
+  // Create content for each panel
+  CreateDashboardPanel(dashboardPanel);
+  CreateTasksPanel(tasksPanel);
+  CreateSettingsPanel(settingsPanel);
+  
+  // Create sizer for the frame
+  wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+  mainSizer->Add(notebook, 1, wxEXPAND | wxALL, 5);
+  SetSizer(mainSizer);
+  
+  std::cout << "Loading categories and tasks" << std::endl;
+  // Load tasks and categories
+  LoadCategories();
+  LoadTasks();
+  UpdateDashboardStatistics();
+  std::cout << "MainFrame constructor complete" << std::endl;
+}
+
+void MainFrame::CreateMenuBar() {
+  wxMenuBar* menuBar = new wxMenuBar;
+  
+  // File menu
+  wxMenu* fileMenu = new wxMenu;
+  fileMenu->Append(ID_EXPORT_TASKS, "&Export Tasks...\tCtrl+E", "Export tasks to CSV file");
+  fileMenu->Append(ID_IMPORT_TASKS, "&Import Tasks...\tCtrl+I", "Import tasks from CSV file");
+  fileMenu->AppendSeparator();
+  fileMenu->Append(wxID_EXIT, "E&xit\tAlt+F4", "Quit the application");
+  
+  // Edit menu
+  wxMenu* editMenu = new wxMenu;
+  editMenu->Append(ID_SEARCH_TASKS, "&Search Tasks...\tCtrl+F", "Search for tasks");
+  editMenu->Append(ID_TOGGLE_COMPLETED, "Show/Hide &Completed Tasks", "Toggle display of completed tasks");
+  
+  // User menu
+  wxMenu* userMenu = new wxMenu;
+  profileMenuItem = userMenu->Append(ID_PROFILE, "&Profile", "Edit your user profile");
+  categoriesMenuItem = userMenu->Append(ID_MANAGE_CATEGORIES, "&Manage Categories", "Manage task categories");
+  userMenu->AppendSeparator();
+  logoutMenuItem = userMenu->Append(ID_LOGOUT, "&Logout", "Logout from the application");
+  
+  // Help menu
+  wxMenu* helpMenu = new wxMenu;
+  helpMenu->Append(wxID_ABOUT, "&About", "About Task Manager");
+  
+  // Add menus to menu bar
+  menuBar->Append(fileMenu, "&File");
+  menuBar->Append(editMenu, "&Edit");
+  menuBar->Append(userMenu, "&User");
+  menuBar->Append(helpMenu, "&Help");
+  
+  SetMenuBar(menuBar);
+}
+
