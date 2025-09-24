@@ -341,3 +341,121 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
   EVT_MENU(ID_TOGGLE_COMPLETED, MainFrame::OnToggleCompleted)
 wxEND_EVENT_TABLE()
 
+// Task Detail Dialog
+class TaskDetailDialog : public wxDialog {
+private:
+  Task* task;
+  
+  wxTextCtrl* titleCtrl;
+  wxTextCtrl* descriptionCtrl;
+  wxDatePickerCtrl* dueDateCtrl;
+  wxSpinCtrl* priorityCtrl;
+  wxCheckBox* completedCtrl;
+  wxComboBox* categoryCombo;
+  
+  DatabaseManager* dbManager;
+  CategoryManager* categoryManager;
+  int userId;
+  std::vector<Category> categories;
+  
+  void OnSaveButton(wxCommandEvent& event);
+  void OnCancelButton(wxCommandEvent& event);
+  
+  void LoadCategories();
+  
+public:
+  TaskDetailDialog(wxWindow* parent, Task* task, DatabaseManager* dbManager, 
+                  CategoryManager* categoryManager, int userId);
+  virtual ~TaskDetailDialog();
+  
+  Task* GetTask() const { return task; }
+  
+  wxDECLARE_EVENT_TABLE();
+};
+
+wxBEGIN_EVENT_TABLE(TaskDetailDialog, wxDialog)
+  EVT_BUTTON(wxID_SAVE, TaskDetailDialog::OnSaveButton)
+  EVT_BUTTON(wxID_CANCEL, TaskDetailDialog::OnCancelButton)
+wxEND_EVENT_TABLE()
+
+TaskDetailDialog::TaskDetailDialog(wxWindow* parent, Task* task, DatabaseManager* dbManager, 
+                               CategoryManager* categoryManager, int userId)
+  : wxDialog(parent, wxID_ANY, "Task Details", wxDefaultPosition, wxSize(500, 400),
+            wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+    task(task), dbManager(dbManager), categoryManager(categoryManager), userId(userId) {
+  
+  // Add validation
+  if (!task) {
+      wxMessageBox("Error: Invalid task data", "Error", wxOK | wxICON_ERROR);
+      EndModal(wxID_CANCEL);
+      return;
+  }
+  
+  wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+  
+  // Form
+  wxFlexGridSizer* formSizer = new wxFlexGridSizer(6, 2, 10, 10);
+  formSizer->AddGrowableCol(1);
+  formSizer->AddGrowableRow(1);
+  
+  // Title
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Title:"), 0, wxALIGN_CENTER_VERTICAL);
+  titleCtrl = new wxTextCtrl(this, wxID_ANY, task->title);
+  formSizer->Add(titleCtrl, 0, wxEXPAND);
+  
+  // Description
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Description:"), 0, wxALIGN_CENTER_VERTICAL);
+  descriptionCtrl = new wxTextCtrl(this, wxID_ANY, task->description, wxDefaultPosition, 
+                                  wxDefaultSize, wxTE_MULTILINE);
+  formSizer->Add(descriptionCtrl, 0, wxEXPAND);
+  
+  // Due Date
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Due Date:"), 0, wxALIGN_CENTER_VERTICAL);
+  wxDateTime dueDate;
+  dueDate.ParseISODate(task->dueDate);
+  dueDateCtrl = new wxDatePickerCtrl(this, wxID_ANY, dueDate);
+  formSizer->Add(dueDateCtrl, 0, wxEXPAND);
+  
+  // Priority
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Priority:"), 0, wxALIGN_CENTER_VERTICAL);
+  priorityCtrl = new wxSpinCtrl(this, wxID_ANY, wxString::Format("%d", task->priority), 
+                               wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 5, task->priority);
+  formSizer->Add(priorityCtrl, 0, wxEXPAND);
+  
+  // Category
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Category:"), 0, wxALIGN_CENTER_VERTICAL);
+  categoryCombo = new wxComboBox(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, 
+                                0, NULL, wxCB_DROPDOWN | wxCB_READONLY);
+  formSizer->Add(categoryCombo, 0, wxEXPAND);
+  
+  // Completed
+  formSizer->Add(new wxStaticText(this, wxID_ANY, "Completed:"), 0, wxALIGN_CENTER_VERTICAL);
+  completedCtrl = new wxCheckBox(this, wxID_ANY, "");
+  completedCtrl->SetValue(task->completed);
+  formSizer->Add(completedCtrl, 0);
+  
+  mainSizer->Add(formSizer, 1, wxALL | wxEXPAND, 10);
+  
+  // Buttons
+  wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+  
+  wxButton* saveButton = new wxButton(this, wxID_SAVE, "Save");
+  wxButton* cancelButton = new wxButton(this, wxID_CANCEL, "Cancel");
+  
+  buttonSizer->AddStretchSpacer();
+  buttonSizer->Add(saveButton, 0, wxRIGHT, 5);
+  buttonSizer->Add(cancelButton, 0);
+  
+  mainSizer->Add(buttonSizer, 0, wxALL | wxEXPAND, 10);
+  
+  SetSizer(mainSizer);
+  
+  // Load categories
+  LoadCategories();
+  
+  titleCtrl->SetFocus();
+}
+
+TaskDetailDialog::~TaskDetailDialog() {
+}
+
