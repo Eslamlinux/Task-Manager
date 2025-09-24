@@ -1741,3 +1741,43 @@ void MainFrame::OnLogout(wxCommandEvent& event) {
       }
   }
 }
+
+void MainFrame::OnProfile(wxCommandEvent& event) {
+  ProfileDialog dlg(this, userManager);
+  dlg.ShowModal();
+}
+
+void MainFrame::OnManageCategories(wxCommandEvent& event) {
+  CategoryListDialog dlg(this, categoryManager, userManager);
+  if (dlg.ShowModal() == wxID_OK) {
+      // Reload categories and tasks (which may have updated category information)
+      LoadCategories();
+      LoadTasks();
+  }
+}
+
+void MainFrame::OnExit(wxCommandEvent& event) {
+  Close(true);
+}
+
+void MainFrame::OnAbout(wxCommandEvent& event) {
+  wxMessageBox("Task Manager Application\n\nA complete task management system with user authentication, task categories, and data import/export capabilities.\n\nVersion 1.0", 
+              "About Task Manager", wxOK | wxICON_INFORMATION);
+}
+
+void MainFrame::OnSearchTasks(wxCommandEvent& event) {
+  // Create a vector to store search results
+  std::vector<Task> searchResults;
+  
+  // Show search dialog
+  SearchDialog dlg(this, dbManager, categoryManager, userManager->GetCurrentUser()->id, &searchResults);
+  
+  if (dlg.ShowModal() == wxID_OK) {
+      // Display search results
+      tasks = searchResults;
+      DisplayTasks();
+      
+      SetStatusText(wxString::Format("Search results: %zu tasks found", tasks.size()));
+  }
+}
+
