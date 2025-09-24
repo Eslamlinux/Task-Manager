@@ -1212,3 +1212,172 @@ void MainFrame::CreateSettingsPanel(wxPanel* panel) {
   
   panel->SetSizer(sizer);
   
+  // Connect events
+  profileButton->Bind(wxEVT_BUTTON, &MainFrame::OnProfile, this);
+  logoutButton->Bind(wxEVT_BUTTON, &MainFrame::OnLogout, this);
+  exportButton->Bind(wxEVT_BUTTON, &MainFrame::OnExportTasks, this);
+  importButton->Bind(wxEVT_BUTTON, &MainFrame::OnImportTasks, this);
+  changePasswordButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+      ProfileDialog dlg(this, userManager);
+      dlg.ShowModal();
+  });
+}
+
+void MainFrame::UpdateDashboardStatistics() {
+  int totalTasks = tasks.size();
+  int completedTasks = 0;
+  int pendingTasks = 0;
+  int urgentTasks = 0;
+  
+  wxDateTime today = wxDateTime::Today();
+  wxDateTime nextWeek = today.Add(wxDateSpan::Days(7));
+  
+  for (const auto& task : tasks) {
+      if (task.completed) {
+          completedTasks++;
+      } else {
+          pendingTasks++;
+          
+          // Check if task is due within the next week
+          wxDateTime dueDate;
+          dueDate.ParseISODate(task.dueDate);
+          
+          if (dueDate.IsValid() && dueDate <= nextWeek) {
+              urgentTasks++;
+          }
+      }
+  }
+  
+  totalTasksText->SetLabel(wxString::Format("%d", totalTasks));
+  completedTasksText->SetLabel(wxString::Format("%d", completedTasks));
+  pendingTasksText->SetLabel(wxString::Format("%d", pendingTasks));
+  urgentTasksText->SetLabel(wxString::Format("%d", urgentTasks));
+  
+  // Display recent tasks
+  DisplayRecentTasks();
+}
+
+void MainFrame::LoadTasks() {
+  tasks = dbManager->GetAllTasks(userManager->GetCurrentUser()->id);
+  DisplayTasks();
+}
+
+void MainFrame::LoadCategories() {
+  categories = categoryManager->GetAllCategories(userManager->GetCurrentUser()->id);
+  
+  // Update category combo in tasks panel
+  categoryCombo->Clear();
+  
+  // Add "No Category" option
+  categoryCombo->Append("No Category", (void*)-1);
+  
+  for (const auto& category : categories) {
+      categoryCombo->Append(category.name, (void*)(wxIntPtr)category.id);
+  }
+  
+  categoryCombo->SetSelection(0); // Default to "No Category"
+}
+
+void MainFrame::DisplayTasks() {
+  // Clear grid
+  if (tasksGrid->GetNumberRows() > 0) {
+      tasksGrid->DeleteRows(0, tasksGrid->GetNumberRows());
+  }
+  
+  // Add tasks to grid
+  tasksGrid->AppendRows(tasks.size());
+  
+  for (size_t i = 0; i < tasks.size(); ++i) {
+      const Task& task = tasks[i];
+      
+      tasksGrid->SetCellValue(i, 0, wxString::Format("%d", task.id));
+      tasksGrid->SetCellValue(i, 1, task.title);
+      tasksGrid->SetCellValue(i, 2, task.dueDate);
+      tasksGrid->SetCellValue(i, 3, wxString::Format("%d", task.priority));
+      tasksGrid->SetCellValue(i, 4, task.categoryName);
+      tasksGrid->SetCellValue(i, 5, task.completed ? "Yes" : "No");
+      
+      // Apply background color based on category
+      if (!task.categoryColor.IsEmpty()) {
+          wxColour color;
+          color.Set(task.categoryColor);
+          tasksGrid->SetCellBackgroundColour(i, 4, color);
+          
+          // Set text color to ensure readability
+          int brightness = (color.Red() * 299 + color.Green() * 587 + color.Blue() * 114) / 1000;
+          if (brightness > 128) {
+              tasksGrid->SetCellTextColour(i, 4, *wxBLACK);
+          } else {
+              tasksGrid->SetCellTextColour(i, 4, *wxWHITE);
+          }
+      }
+      
+      // Apply background color to completed tasks
+      if (task.completed) {
+          for (int col = 0; col < tasksGrid->GetNumberCols(); ++col) {
+              // Skip category cell which already has a color
+              if (col != 4 || task.categoryColor.IsEmpty()) {
+                  tasksGrid->SetCellBackgroundColour(i, col, wxColour(240, 240, 240));
+              }
+          }
+      }
+      
+      // Apply background color to high priority tasks (4-5)
+      if (task.priority >= 4 && !task.completed) {
+          tasksGrid->SetCellBackgroundColour(i, 3, wxColour(255, 200, 200));
+      }
+  }
+  
+  tasksGrid->AutoSize();
+}
+
+void MainFrame::DisplayRecentTasks() {
+  recentTasksList->DeleteAllItems();
+  
+  // Sort tasks by due date (ascending)
+  std::vector<Task> sortedTasks = tasks;
+  std::sort(sortedTasks.begin(), sortedTasks.end(), [](const Task& a, const Task& b) {
+      // Put completed tasks at the end
+      if (a.completed != b.completed) {
+          return !a.completed;
+      }
+      
+      // Sort by due date
+      return a.dueDate < b.dueDate;
+  });
+  
+  // Display at most 10 most recent tasks
+  int count = std::min(10, static_cast<int>(sortedTasks.size()));
+  
+  for (int i = 0; i < count; ++i) {
+      const Task& task = sortedTasks[i];
+      
+      long itemIndex = recentTasksList->InsertItem(i, task.title);
+      recentTasksList->SetItem(itemIndex, 1, task.dueDate);
+      recentTasksList->SetItem(itemIndex, 2, wxString::Format("%d", task.priority));
+      recentTasksList->SetItem(itemIndex, 3, task.categoryName);
+      recentTasksList->SetItem(itemIndex, 4, task.completed ? "Completed" : "Pending");
+      
+      // Store task ID in the item data
+      recentTasksList->SetItemData(itemIndex, task.id);
+      
+      // Set item color
+      if (task.completed) {
+          recentTasksList->SetItemTextColour(itemIndex, wxColour(0, 128, 0)); // Green for completed
+      } else {
+          // Determine urgency based on due date
+          wxDateTime dueDate;
+          wxDateTime today = wxDateTime::Today();
+          dueDate.ParseISODate(task.dueDate);
+          
+          if (dueDate.IsValid()) {
+              if (dueDate < today) {
+                  recentTasksList->SetItemTextColour(itemIndex, wxColour(255, 0, 0)); // Red for overdue
+              } else if (dueDate <= today.Add(wxDateSpan::Days(3))) {
+                  recentTasksList->SetItemTextColour(itemIndex, wxColour(255, 128, 0)); // Orange for urgent
+              }
+          }
+      }
+  }
+}
+
