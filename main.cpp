@@ -938,3 +938,136 @@ void MainFrame::CreateMenuBar() {
   SetMenuBar(menuBar);
 }
 
+void MainFrame::CreateDashboardPanel(wxPanel* panel) {
+  wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+  
+  // Welcome section
+  wxBoxSizer* welcomeSizer = new wxBoxSizer(wxHORIZONTAL);
+  
+  // User info and welcome message
+  wxStaticText* welcomeText = new wxStaticText(panel, wxID_ANY, 
+      wxString::Format("Welcome, %s!", userManager->GetCurrentUser()->fullName));
+  wxFont font = welcomeText->GetFont();
+  font.SetPointSize(font.GetPointSize() + 4);
+  font.SetWeight(wxFONTWEIGHT_BOLD);
+  welcomeText->SetFont(font);
+  
+  welcomeSizer->Add(welcomeText, 0, wxALL | wxALIGN_CENTER_VERTICAL, 10);
+  
+  mainSizer->Add(welcomeSizer, 0, wxEXPAND);
+  
+  // Statistics section
+  wxStaticBoxSizer* statsSizer = new wxStaticBoxSizer(
+      new wxStaticBox(panel, wxID_ANY, "Task Statistics"), wxVERTICAL);
+  
+  wxFlexGridSizer* statsGridSizer = new wxFlexGridSizer(2, 4, 10, 20);
+  
+  // Total Tasks
+  statsGridSizer->Add(new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "Total Tasks:"), 
+                     0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  totalTasksText = new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "0");
+  wxFont boldFont = totalTasksText->GetFont();
+  boldFont.SetWeight(wxFONTWEIGHT_BOLD);
+  totalTasksText->SetFont(boldFont);
+  statsGridSizer->Add(totalTasksText, 0, wxALIGN_CENTER_VERTICAL);
+  
+  // Completed Tasks
+  statsGridSizer->Add(new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "Completed:"), 
+                     0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  completedTasksText = new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "0");
+  completedTasksText->SetFont(boldFont);
+  completedTasksText->SetForegroundColour(wxColour(0, 128, 0)); // Green
+  statsGridSizer->Add(completedTasksText, 0, wxALIGN_CENTER_VERTICAL);
+  
+  // Pending Tasks
+  statsGridSizer->Add(new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "Pending:"), 
+                     0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  pendingTasksText = new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "0");
+  pendingTasksText->SetFont(boldFont);
+  pendingTasksText->SetForegroundColour(wxColour(0, 0, 200)); // Blue
+  statsGridSizer->Add(pendingTasksText, 0, wxALIGN_CENTER_VERTICAL);
+  
+  // Urgent Tasks (due within 7 days)
+  statsGridSizer->Add(new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "Urgent:"), 
+                     0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
+  urgentTasksText = new wxStaticText(statsSizer->GetStaticBox(), wxID_ANY, "0");
+  urgentTasksText->SetFont(boldFont);
+  urgentTasksText->SetForegroundColour(wxColour(200, 0, 0)); // Red
+  statsGridSizer->Add(urgentTasksText, 0, wxALIGN_CENTER_VERTICAL);
+  
+  statsSizer->Add(statsGridSizer, 0, wxALL, 10);
+  
+  mainSizer->Add(statsSizer, 0, wxALL | wxEXPAND, 10);
+  
+  // Quick Actions
+  wxStaticBoxSizer* actionsSizer = new wxStaticBoxSizer(
+      new wxStaticBox(panel, wxID_ANY, "Quick Actions"), wxHORIZONTAL);
+  
+  wxButton* addTaskButton = new wxButton(actionsSizer->GetStaticBox(), wxID_ANY, "Add New Task");
+  wxButton* searchTasksButton = new wxButton(actionsSizer->GetStaticBox(), wxID_ANY, "Search Tasks");
+  wxButton* exportTasksButton = new wxButton(actionsSizer->GetStaticBox(), wxID_ANY, "Export Tasks");
+  wxButton* manageCategoriesButton = new wxButton(actionsSizer->GetStaticBox(), wxID_ANY, "Manage Categories");
+  
+  actionsSizer->Add(addTaskButton, 1, wxALL, 5);
+  actionsSizer->Add(searchTasksButton, 1, wxALL, 5);
+  actionsSizer->Add(exportTasksButton, 1, wxALL, 5);
+  actionsSizer->Add(manageCategoriesButton, 1, wxALL, 5);
+  
+  mainSizer->Add(actionsSizer, 0, wxALL | wxEXPAND, 10);
+  
+  // Recent Tasks
+  wxStaticBoxSizer* recentTasksSizer = new wxStaticBoxSizer(
+      new wxStaticBox(panel, wxID_ANY, "Recent Tasks"), wxVERTICAL);
+  
+  recentTasksList = new wxListCtrl(recentTasksSizer->GetStaticBox(), wxID_ANY, 
+                                  wxDefaultPosition, wxDefaultSize, 
+                                  wxLC_REPORT | wxLC_SINGLE_SEL);
+  
+  recentTasksList->InsertColumn(0, "Title", wxLIST_FORMAT_LEFT, 200);
+  recentTasksList->InsertColumn(1, "Due Date", wxLIST_FORMAT_LEFT, 100);
+  recentTasksList->InsertColumn(2, "Priority", wxLIST_FORMAT_LEFT, 80);
+  recentTasksList->InsertColumn(3, "Category", wxLIST_FORMAT_LEFT, 120);
+  recentTasksList->InsertColumn(4, "Status", wxLIST_FORMAT_LEFT, 100);
+  
+  recentTasksSizer->Add(recentTasksList, 1, wxALL | wxEXPAND, 5);
+  
+  mainSizer->Add(recentTasksSizer, 1, wxALL | wxEXPAND, 10);
+  
+  panel->SetSizer(mainSizer);
+  
+  // Connect events
+  addTaskButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+      notebook->SetSelection(1); // Switch to Tasks tab
+      ClearForm();
+  });
+  
+  searchTasksButton->Bind(wxEVT_BUTTON, &MainFrame::OnSearchTasks, this);
+  
+  exportTasksButton->Bind(wxEVT_BUTTON, &MainFrame::OnExportTasks, this);
+  
+  manageCategoriesButton->Bind(wxEVT_BUTTON, &MainFrame::OnManageCategories, this);
+  
+  recentTasksList->Bind(wxEVT_LIST_ITEM_ACTIVATED, [this](wxListEvent& event) {
+      // Get the task ID stored in the item data
+      long taskId = event.GetItem().GetData();
+      
+      // Find the task
+      Task* selectedTask = nullptr;
+      for (auto& task : tasks) {
+          if (task.id == taskId) {
+              selectedTask = &task;
+              break;
+          }
+      }
+      
+      if (selectedTask) {
+          TaskDetailDialog dlg(this, selectedTask, dbManager, categoryManager, 
+                             userManager->GetCurrentUser()->id);
+          if (dlg.ShowModal() == wxID_OK) {
+              LoadTasks();
+              UpdateDashboardStatistics();
+          }
+      }
+  });
+}
+
