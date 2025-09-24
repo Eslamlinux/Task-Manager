@@ -1781,3 +1781,17 @@ void MainFrame::OnSearchTasks(wxCommandEvent& event) {
   }
 }
 
+void MainFrame::OnToggleCompleted(wxCommandEvent& event) {
+  static bool includeCompleted = true;
+  
+  includeCompleted = !includeCompleted;
+  
+  tasks = dbManager->GetAllTasks(userManager->GetCurrentUser()->id, includeCompleted);
+  DisplayTasks();
+  
+  SetStatusText(includeCompleted ? 
+              "Showing all tasks" : 
+              "Showing only pending tasks");
+}
+
+wxIMPLEMENT_APP(TaskManagerApp);
