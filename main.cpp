@@ -145,3 +145,64 @@ public:
       return results;
   }
 
+  bool AddTask(const wxString& title, const wxString& description, 
+             const wxString& dueDate, int priority, int categoryId, int userId) {
+      try {
+          wxSQLite3Statement stmt = db.PrepareStatement(
+              "INSERT INTO tasks (title, description, due_date, priority, category_id, user_id) "
+              "VALUES (?, ?, ?, ?, ?, ?)"
+          );
+          
+          stmt.Bind(1, title);
+          stmt.Bind(2, description);
+          stmt.Bind(3, dueDate);
+          stmt.Bind(4, priority);
+          
+          if (categoryId > 0) {
+              stmt.Bind(5, categoryId);
+          } else {
+              stmt.BindNull(5);
+          }
+          
+          stmt.Bind(6, userId);
+          
+          stmt.ExecuteUpdate();
+          return true;
+      } catch (wxSQLite3Exception& e) {
+          std::cerr << "Database error: " << e.GetMessage().ToStdString() << std::endl;
+          wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+          return false;
+      }
+  }
+
+  bool UpdateTask(int id, const wxString& title, const wxString& description, 
+                const wxString& dueDate, int priority, bool completed, int categoryId) {
+      try {
+          wxSQLite3Statement stmt = db.PrepareStatement(
+              "UPDATE tasks SET title = ?, description = ?, due_date = ?, "
+              "priority = ?, completed = ?, category_id = ? WHERE id = ?"
+          );
+          
+          stmt.Bind(1, title);
+          stmt.Bind(2, description);
+          stmt.Bind(3, dueDate);
+          stmt.Bind(4, priority);
+          stmt.Bind(5, completed ? 1 : 0);
+          
+          if (categoryId > 0) {
+              stmt.Bind(6, categoryId);
+          } else {
+              stmt.BindNull(6);
+          }
+          
+          stmt.Bind(7, id);
+          
+          stmt.ExecuteUpdate();
+          return true;
+      } catch (wxSQLite3Exception& e) {
+          std::cerr << "Database error: " << e.GetMessage().ToStdString() << std::endl;
+          wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+          return false;
+      }
+  }
+
