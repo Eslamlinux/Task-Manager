@@ -84,3 +84,64 @@ public:
         std::cout << "Tables created successfully" << std::endl;
         
         return true;
+    } catch (wxSQLite3Exception& e) {
+        std::cerr << "Database error: " << e.GetMessage().ToStdString() << std::endl;
+        wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+        isConnected = false;
+        return false;
+    }
+}
+
+  bool IsConnected() const {
+      return isConnected;
+  }
+
+  wxSQLite3Database* GetDatabase() {
+      return &db;
+  }
+
+  std::vector<Task> GetAllTasks(int userId, bool includeCompleted = true) {
+      std::vector<Task> results;
+      
+      try {
+          wxString sql = 
+              "SELECT t.id, t.title, t.description, t.due_date, t.priority, t.completed, "
+              "t.category_id, c.name as category_name, c.color as category_color "
+              "FROM tasks t "
+              "LEFT JOIN categories c ON t.category_id = c.id "
+              "WHERE t.user_id = ? ";
+          
+          if (!includeCompleted) {
+              sql += "AND t.completed = 0 ";
+          }
+          
+          sql += "ORDER BY t.due_date, t.priority DESC";
+          
+          wxSQLite3Statement stmt = db.PrepareStatement(sql);
+          stmt.Bind(1, userId);
+          stmt.Reset();
+          wxSQLite3ResultSet set = stmt.ExecuteQuery();
+          
+          while (set.NextRow()) {
+              Task task;
+              task.id = set.GetAsInt(0);
+              task.title = set.GetAsString(1);
+              task.description = set.GetAsString(2);
+              task.dueDate = set.GetAsString(3);
+              task.priority = set.GetAsInt(4);
+              task.completed = set.GetAsInt(5) != 0;
+              task.categoryId = set.IsNull(6) ? -1 : set.GetAsInt(6);
+              task.categoryName = set.IsNull(7) ? "No Category" : set.GetAsString(7);
+              task.categoryColor = set.IsNull(8) ? "#FFFFFF" : set.GetAsString(8);
+              task.userId = userId;
+              
+              results.push_back(task);
+          }
+      } catch (wxSQLite3Exception& e) {
+          std::cerr << "Query error: " << e.GetMessage().ToStdString() << std::endl;
+          wxMessageBox(e.GetMessage(), "Query Error", wxOK | wxICON_ERROR);
+      }
+      
+      return results;
+  }
+
