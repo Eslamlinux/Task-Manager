@@ -169,3 +169,67 @@ wxDateTime wxSQLite3ResultSet::GetAsDateTime(int columnIndex) const {
     return date;
 }
 
+bool wxSQLite3ResultSet::GetAsBool(int columnIndex) const {
+    return GetAsInt(columnIndex) != 0;
+}
+
+bool wxSQLite3ResultSet::IsNull(int columnIndex) const {
+    if (m_stmt == nullptr) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Result set not valid");
+    }
+    
+    return sqlite3_column_type(m_stmt, columnIndex) == SQLITE_NULL;
+}
+
+// wxSQLite3Database implementation
+wxSQLite3Database::wxSQLite3Database() : m_db(nullptr), m_isOpen(false) {
+}
+
+wxSQLite3Database::~wxSQLite3Database() {
+    Close();
+}
+
+void wxSQLite3Database::Open(const wxString& fileName) {
+    if (m_isOpen) {
+        Close();
+    }
+    
+    wxCharBuffer fileNameBuffer = fileName.ToUTF8();
+    int rc = sqlite3_open(fileNameBuffer, &m_db);
+    
+    if (rc != SQLITE_OK) {
+        wxString errmsg = wxString::FromUTF8(sqlite3_errmsg(m_db));
+        sqlite3_close(m_db);
+        m_db = nullptr;
+        throw wxSQLite3Exception(rc, errmsg);
+    }
+    
+    m_isOpen = true;
+}
+
+void wxSQLite3Database::Close() {
+    if (m_db != nullptr) {
+        sqlite3_close(m_db);
+        m_db = nullptr;
+    }
+    m_isOpen = false;
+}
+
+wxSQLite3Statement wxSQLite3Database::PrepareStatement(const wxString& sql) {
+    if (m_db == nullptr) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Database not open");
+    }
+    
+    wxCharBuffer sqlBuffer = sql.ToUTF8();
+    sqlite3_stmt* stmt = nullptr;
+    
+    int rc = sqlite3_prepare_v2(m_db, sqlBuffer, -1, &stmt, nullptr);
+    
+    if (rc != SQLITE_OK) {
+        wxString errmsg = wxString::FromUTF8(sqlite3_errmsg(m_db));
+        throw wxSQLite3Exception(rc, errmsg);
+    }
+    
+    return wxSQLite3Statement(stmt, this);
+}
+
