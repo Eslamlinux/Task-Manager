@@ -271,3 +271,73 @@ private:
   std::vector<Category> categories;
   int selectedTaskId;
   
+  // Dashboard statistics
+  wxStaticText* totalTasksText;
+  wxStaticText* completedTasksText;
+  wxStaticText* pendingTasksText;
+  wxStaticText* urgentTasksText;
+  wxListCtrl* recentTasksList;
+
+public:
+  MainFrame(const wxString& title, DatabaseManager* dbManager, 
+           UserManager* userManager, CategoryManager* categoryManager);
+
+  void CreateMenuBar();
+  void CreateDashboardPanel(wxPanel* panel);
+  void CreateTasksPanel(wxPanel* panel);
+  void CreateSettingsPanel(wxPanel* panel);
+  
+  void UpdateDashboardStatistics();
+  void LoadTasks();
+  void LoadCategories();
+  void DisplayTasks();
+  void DisplayRecentTasks();
+  void ClearForm();
+  
+  void OnTaskSelect(wxGridEvent& event);
+  void OnAddTask(wxCommandEvent& event);
+  void OnUpdateTask(wxCommandEvent& event);
+  void OnDeleteTask(wxCommandEvent& event);
+  void OnTaskDetail(wxGridEvent& event);
+  void OnExportTasks(wxCommandEvent& event);
+  void OnImportTasks(wxCommandEvent& event);
+  void OnLogout(wxCommandEvent& event);
+  void OnProfile(wxCommandEvent& event);
+  void OnManageCategories(wxCommandEvent& event);
+  void OnExit(wxCommandEvent& event);
+  void OnAbout(wxCommandEvent& event);
+  void OnSearchTasks(wxCommandEvent& event);
+  void OnToggleCompleted(wxCommandEvent& event);
+  
+  // IDs for menu items and controls
+  enum {
+      ID_LOGOUT = wxID_HIGHEST + 1,
+      ID_PROFILE,
+      ID_MANAGE_CATEGORIES,
+      ID_EXPORT_TASKS,
+      ID_IMPORT_TASKS,
+      ID_SEARCH_TASKS,
+      ID_TOGGLE_COMPLETED
+  };
+  
+  wxDECLARE_EVENT_TABLE();
+};
+
+// Event table
+wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
+  EVT_GRID_SELECT_CELL(MainFrame::OnTaskSelect)
+  EVT_GRID_CELL_LEFT_DCLICK(MainFrame::OnTaskDetail)
+  EVT_BUTTON(wxID_ADD, MainFrame::OnAddTask)
+  EVT_BUTTON(wxID_SAVE, MainFrame::OnUpdateTask)
+  EVT_BUTTON(wxID_DELETE, MainFrame::OnDeleteTask)
+  EVT_MENU(ID_LOGOUT, MainFrame::OnLogout)
+  EVT_MENU(ID_PROFILE, MainFrame::OnProfile)
+  EVT_MENU(ID_MANAGE_CATEGORIES, MainFrame::OnManageCategories)
+  EVT_MENU(ID_EXPORT_TASKS, MainFrame::OnExportTasks)
+  EVT_MENU(ID_IMPORT_TASKS, MainFrame::OnImportTasks)
+  EVT_MENU(wxID_EXIT, MainFrame::OnExit)
+  EVT_MENU(wxID_ABOUT, MainFrame::OnAbout)
+  EVT_MENU(ID_SEARCH_TASKS, MainFrame::OnSearchTasks)
+  EVT_MENU(ID_TOGGLE_COMPLETED, MainFrame::OnToggleCompleted)
+wxEND_EVENT_TABLE()
+
