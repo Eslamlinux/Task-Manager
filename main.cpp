@@ -1071,3 +1071,144 @@ void MainFrame::CreateDashboardPanel(wxPanel* panel) {
   });
 }
 
+void MainFrame::CreateTasksPanel(wxPanel* panel) {
+  wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+  
+  // Create tasks grid
+  tasksGrid = new wxGrid(panel, wxID_ANY);
+  tasksGrid->CreateGrid(0, 6);
+  tasksGrid->SetColLabelValue(0, "ID");
+  tasksGrid->SetColLabelValue(1, "Title");
+  tasksGrid->SetColLabelValue(2, "Due Date");
+  tasksGrid->SetColLabelValue(3, "Priority");
+  tasksGrid->SetColLabelValue(4, "Category");
+  tasksGrid->SetColLabelValue(5, "Completed");
+  
+  tasksGrid->SetColSize(0, 50);
+  tasksGrid->SetColSize(1, 200);
+  tasksGrid->SetColSize(2, 100);
+  tasksGrid->SetColSize(3, 80);
+  tasksGrid->SetColSize(4, 120);
+  tasksGrid->SetColSize(5, 100);
+  
+  // Create form for adding/editing tasks
+  wxStaticBox* formBox = new wxStaticBox(panel, wxID_ANY, "Task Details");
+  wxStaticBoxSizer* formSizer = new wxStaticBoxSizer(formBox, wxVERTICAL);
+  
+  wxFlexGridSizer* gridSizer = new wxFlexGridSizer(6, 2, 5, 10);
+  gridSizer->AddGrowableCol(1);
+  
+  // Title
+  gridSizer->Add(new wxStaticText(formBox, wxID_ANY, "Title:"), 0, wxALIGN_CENTER_VERTICAL);
+  titleCtrl = new wxTextCtrl(formBox, wxID_ANY);
+  gridSizer->Add(titleCtrl, 0, wxEXPAND);
+  
+  // Description
+  gridSizer->Add(new wxStaticText(formBox, wxID_ANY, "Description:"), 0, wxALIGN_CENTER_VERTICAL);
+  descriptionCtrl = new wxTextCtrl(formBox, wxID_ANY, wxEmptyString, wxDefaultPosition, 
+      wxSize(-1, 60), wxTE_MULTILINE);
+  gridSizer->Add(descriptionCtrl, 0, wxEXPAND);
+  
+  // Due Date
+  gridSizer->Add(new wxStaticText(formBox, wxID_ANY, "Due Date:"), 0, wxALIGN_CENTER_VERTICAL);
+  dueDateCtrl = new wxDatePickerCtrl(formBox, wxID_ANY);
+  gridSizer->Add(dueDateCtrl, 0, wxEXPAND);
+  
+  // Priority
+  gridSizer->Add(new wxStaticText(formBox, wxID_ANY, "Priority:"), 0, wxALIGN_CENTER_VERTICAL);
+  priorityCtrl = new wxSpinCtrl(formBox, wxID_ANY, "1", wxDefaultPosition, wxDefaultSize, 
+      wxSP_ARROW_KEYS, 1, 5, 1);
+  gridSizer->Add(priorityCtrl, 0, wxEXPAND);
+  
+  // Category
+  gridSizer->Add(new wxStaticText(formBox, wxID_ANY, "Category:"), 0, wxALIGN_CENTER_VERTICAL);
+  categoryCombo = new wxComboBox(formBox, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, 
+                                0, NULL, wxCB_DROPDOWN | wxCB_READONLY);
+  gridSizer->Add(categoryCombo, 0, wxEXPAND);
+  
+  // Completed
+  gridSizer->Add(new wxStaticText(formBox, wxID_ANY, "Completed:"), 0, wxALIGN_CENTER_VERTICAL);
+  completedCtrl = new wxCheckBox(formBox, wxID_ANY, "");
+  gridSizer->Add(completedCtrl, 0, wxEXPAND);
+  
+  formSizer->Add(gridSizer, 0, wxALL | wxEXPAND, 10);
+  
+  // Buttons
+  wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+  
+  addButton = new wxButton(formBox, wxID_ADD, "Add Task");
+  updateButton = new wxButton(formBox, wxID_SAVE, "Update Task");
+  deleteButton = new wxButton(formBox, wxID_DELETE, "Delete Task");
+  
+  buttonSizer->Add(addButton, 0, wxRIGHT, 5);
+  buttonSizer->Add(updateButton, 0, wxRIGHT, 5);
+  buttonSizer->Add(deleteButton, 0);
+  
+  formSizer->Add(buttonSizer, 0, wxALL | wxALIGN_RIGHT, 10);
+  
+  // Add to main sizer
+  mainSizer->Add(tasksGrid, 1, wxALL | wxEXPAND, 10);
+  mainSizer->Add(formSizer, 0, wxALL | wxEXPAND, 10);
+  
+  panel->SetSizer(mainSizer);
+  
+  // Initially disable update and delete buttons
+  updateButton->Disable();
+  deleteButton->Disable();
+  
+  addButton->Enable();
+}
+
+void MainFrame::CreateSettingsPanel(wxPanel* panel) {
+  wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+  
+  wxStaticBox* appearanceBox = new wxStaticBox(panel, wxID_ANY, "Appearance");
+  wxStaticBoxSizer* appearanceSizer = new wxStaticBoxSizer(appearanceBox, wxVERTICAL);
+  
+  wxCheckBox* darkModeCheck = new wxCheckBox(appearanceBox, wxID_ANY, "Dark Mode");
+  wxCheckBox* compactViewCheck = new wxCheckBox(appearanceBox, wxID_ANY, "Compact View");
+  
+  appearanceSizer->Add(darkModeCheck, 0, wxALL, 5);
+  appearanceSizer->Add(compactViewCheck, 0, wxALL, 5);
+  
+  wxStaticBox* notificationsBox = new wxStaticBox(panel, wxID_ANY, "Notifications");
+  wxStaticBoxSizer* notificationsSizer = new wxStaticBoxSizer(notificationsBox, wxVERTICAL);
+  
+  wxCheckBox* enableNotificationsCheck = new wxCheckBox(notificationsBox, wxID_ANY, "Enable Notifications");
+  wxCheckBox* soundAlertsCheck = new wxCheckBox(notificationsBox, wxID_ANY, "Sound Alerts");
+  
+  notificationsSizer->Add(enableNotificationsCheck, 0, wxALL, 5);
+  notificationsSizer->Add(soundAlertsCheck, 0, wxALL, 5);
+  
+  wxStaticBox* dataBox = new wxStaticBox(panel, wxID_ANY, "Data Management");
+  wxStaticBoxSizer* dataSizer = new wxStaticBoxSizer(dataBox, wxVERTICAL);
+  
+  wxButton* exportButton = new wxButton(dataBox, wxID_ANY, "Export Data");
+  wxButton* importButton = new wxButton(dataBox, wxID_ANY, "Import Data");
+  wxButton* backupButton = new wxButton(dataBox, wxID_ANY, "Backup Database");
+  
+  dataSizer->Add(exportButton, 0, wxALL | wxEXPAND, 5);
+  dataSizer->Add(importButton, 0, wxALL | wxEXPAND, 5);
+  dataSizer->Add(backupButton, 0, wxALL | wxEXPAND, 5);
+  
+  wxStaticBox* accountBox = new wxStaticBox(panel, wxID_ANY, "Account");
+  wxStaticBoxSizer* accountSizer = new wxStaticBoxSizer(accountBox, wxVERTICAL);
+  
+  wxButton* profileButton = new wxButton(accountBox, wxID_ANY, "Edit Profile");
+  wxButton* changePasswordButton = new wxButton(accountBox, wxID_ANY, "Change Password");
+  wxButton* logoutButton = new wxButton(accountBox, wxID_ANY, "Logout");
+  
+  accountSizer->Add(profileButton, 0, wxALL | wxEXPAND, 5);
+  accountSizer->Add(changePasswordButton, 0, wxALL | wxEXPAND, 5);
+  accountSizer->Add(logoutButton, 0, wxALL | wxEXPAND, 5);
+  
+  wxButton* saveSettingsButton = new wxButton(panel, wxID_ANY, "Save Settings");
+  
+  sizer->Add(appearanceSizer, 0, wxALL | wxEXPAND, 10);
+  sizer->Add(notificationsSizer, 0, wxALL | wxEXPAND, 10);
+  sizer->Add(dataSizer, 0, wxALL | wxEXPAND, 10);
+  sizer->Add(accountSizer, 0, wxALL | wxEXPAND, 10);
+  sizer->Add(saveSettingsButton, 0, wxALL | wxALIGN_RIGHT, 10);
+  
+  panel->SetSizer(sizer);
+  
