@@ -53,3 +53,18 @@ ProfileDialog::ProfileDialog(wxWindow* parent, UserManager* userManager)
     
     mainSizer->Add(profileSizer, 0, wxALL | wxEXPAND, 10);
     
+    // Change Password
+    wxStaticBoxSizer* passwordSizer = new wxStaticBoxSizer(
+        new wxStaticBox(this, wxID_ANY, "Change Password"), wxVERTICAL);
+    
+    wxFlexGridSizer* passwordFormSizer = new wxFlexGridSizer(3, 2, 10, 10);
+    passwordFormSizer->AddGrowableCol(1);
+    
+    // Current Password
+    passwordFormSizer->Add(new wxStaticText(passwordSizer->GetStaticBox(), wxID_ANY, "Current Password:"), 
+                          0, wxALIGN_CENTER_VERTICAL);
+    currentPasswordCtrl = new wxTextCtrl(passwordSizer->GetStaticBox(), wxID_ANY, wxEmptyString, 
+                                        wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
+    passwordFormSizer->Add(currentPasswordCtrl, 0, wxEXPAND);
+    
+ 
