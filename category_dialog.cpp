@@ -52,3 +52,26 @@ CategoryDialog::CategoryDialog(wxWindow* parent, CategoryManager* categoryManage
     SetSizer(mainSizer);
     Centre();
     
+    // Set initial values if editing
+    if (category) {
+        nameCtrl->SetValue(category->name);
+        
+        // Parse color string to wxColour
+        wxColour color;
+        color.Set(category->color);
+        colorCtrl->SetColour(color);
+        
+        descriptionCtrl->SetValue(category->description);
+    }
+    else {
+        // Default color for new categories
+        colorCtrl->SetColour(wxColour(0, 120, 215));
+    }
+    
+    nameCtrl->SetFocus();
+    saveButton->SetDefault();
+}
+
+CategoryDialog::~CategoryDialog() {
+}
+
