@@ -101,3 +101,39 @@ wxString UserManager::GenerateSalt() {
   return salt;
 }
 
+wxString UserManager::HashPassword(const wxString& password, const wxString& salt) {
+  std::cout << "HashPassword - Hashing password" << std::endl;
+  // Simple password hashing using our SimpleSHA256 function
+  return SimpleSHA256(salt + password);
+}
+
+bool UserManager::Login(const wxString& username, const wxString& password) {
+  try {
+      wxSQLite3Statement stmt = db->PrepareStatement(
+          "SELECT id, username, email, password_hash, password_salt, full_name, created_date, is_admin "
+          "FROM users WHERE username = ?"
+      );
+      
+      stmt.Bind(1, username);
+      wxSQLite3ResultSet resultSet = stmt.ExecuteQuery();
+      
+      if (resultSet.NextRow()) {
+          wxString storedHash = resultSet.GetAsString(3);
+          wxString salt = resultSet.GetAsString(4);
+          wxString computedHash = HashPassword(password, salt);
+          
+          if (storedHash == computedHash) {
+              // Authentication successful
+              currentUser = std::make_unique<User>();
+              currentUser->id = resultSet.GetAsInt(0);
+              currentUser->username = resultSet.GetAsString(1);
+              currentUser->email = resultSet.GetAsString(2);
+              currentUser->passwordHash = storedHash;
+              currentUser->fullName = resultSet.GetAsString(5);
+              currentUser->createdDate = resultSet.GetAsString(6);
+              currentUser->isAdmin = resultSet.GetAsBool(7);
+              return true;
+          }
+      }
+      
+   
