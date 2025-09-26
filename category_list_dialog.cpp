@@ -51,3 +51,41 @@ CategoryListDialog::CategoryListDialog(wxWindow* parent, CategoryManager* catego
     editButton->Disable();
     deleteButton->Disable();
     
+    // Load categories
+    LoadCategories();
+}
+
+CategoryListDialog::~CategoryListDialog() {
+}
+
+void CategoryListDialog::LoadCategories() {
+    categoryList->DeleteAllItems();
+    
+    std::vector<Category> categories = categoryManager->GetAllCategories(userManager->GetCurrentUser()->id);
+    
+    for (size_t i = 0; i < categories.size(); ++i) {
+        const Category& category = categories[i];
+        
+        long itemIndex = categoryList->InsertItem(i, wxString::Format("%d", category.id));
+        categoryList->SetItem(itemIndex, 1, category.name);
+        categoryList->SetItem(itemIndex, 2, category.color);
+        categoryList->SetItem(itemIndex, 3, category.description);
+        
+        // Store category ID as item data
+        categoryList->SetItemData(itemIndex, category.id);
+        
+        // Set background color for the item based on category color
+        wxColour color;
+        color.Set(category.color);
+        categoryList->SetItemBackgroundColour(itemIndex, color);
+        
+        // Set text color to ensure readability
+        int brightness = (color.Red() * 299 + color.Green() * 587 + color.Blue() * 114) / 1000;
+        if (brightness > 128) {
+            categoryList->SetItemTextColour(itemIndex, *wxBLACK);
+        } else {
+            categoryList->SetItemTextColour(itemIndex, *wxWHITE);
+        }
+    }
+}
+
