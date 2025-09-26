@@ -404,3 +404,69 @@ User* UserManager::GetUserByUsername(const wxString& username) {
   return nullptr;
 }
 
+bool UserManager::IsLoggedIn() const {
+  return currentUser != nullptr;
+}
+
+User* UserManager::GetCurrentUser() const {
+  return currentUser.get();
+}
+
+bool UserManager::IsAdmin() const {
+  return currentUser && currentUser->isAdmin;
+}
+
+bool UserManager::CreateDefaultAdminIfNeeded() {
+  std::cout << "CreateDefaultAdminIfNeeded - Starting" << std::endl;
+  try {
+      // Check if any users exist
+      std::cout << "CreateDefaultAdminIfNeeded - Checking if users exist" << std::endl;
+      
+      if (!db) {
+          std::cerr << "ERROR: Database pointer is null in CreateDefaultAdminIfNeeded" << std::endl;
+          return false;
+      }
+      
+      std::cout << "CreateDefaultAdminIfNeeded - Database pointer is valid" << std::endl;
+      
+      // Use a safer approach with prepared statement instead of direct query
+      wxSQLite3Statement stmt = db->PrepareStatement("SELECT COUNT(*) FROM users");
+      std::cout << "CreateDefaultAdminIfNeeded - Statement prepared" << std::endl;
+      
+      wxSQLite3ResultSet resultSet = stmt.ExecuteQuery();
+      std::cout << "CreateDefaultAdminIfNeeded - Query executed" << std::endl;
+      
+      bool hasUsers = false;
+      if (resultSet.NextRow()) {
+          std::cout << "CreateDefaultAdminIfNeeded - Got result row" << std::endl;
+          int count = resultSet.GetAsInt(0);
+          std::cout << "CreateDefaultAdminIfNeeded - User count: " << count << std::endl;
+          hasUsers = (count > 0);
+      } else {
+          std::cout << "CreateDefaultAdminIfNeeded - No result row returned" << std::endl;
+      }
+      
+      if (!hasUsers) {
+          // No users exist, create default admin
+          std::cout << "CreateDefaultAdminIfNeeded - No users found, creating default admin" << std::endl;
+          return RegisterUser("admin", "admin@example.com", 
+                            "admin123", "Administrator", true);
+      }
+      
+      std::cout << "CreateDefaultAdminIfNeeded - Users already exist" << std::endl;
+      return true;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in CreateDefaultAdminIfNeeded: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+  catch (std::exception& e) {
+      std::cerr << "Standard exception in CreateDefaultAdminIfNeeded: " << e.what() << std::endl;
+      return false;
+  }
+  catch (...) {
+      std::cerr << "Unknown exception in CreateDefaultAdminIfNeeded" << std::endl;
+      return false;
+  }
+}
