@@ -134,3 +134,30 @@ std::vector<Category> CategoryManager::GetAllCategories(int userId) {
     return categories;
 }
 
+Category* CategoryManager::GetCategoryById(int categoryId) {
+    try {
+        wxSQLite3Statement stmt = db->PrepareStatement(
+            "SELECT id, name, color, description, user_id "
+            "FROM categories WHERE id = ?"
+        );
+        
+        stmt.Bind(1, categoryId);
+        wxSQLite3ResultSet resultSet = stmt.ExecuteQuery();
+        
+        if (resultSet.NextRow()) {
+            Category* category = new Category();
+            category->id = resultSet.GetAsInt(0);
+            category->name = resultSet.GetAsString(1);
+            category->color = resultSet.GetAsString(2);
+            category->description = resultSet.GetAsString(3);
+            category->userId = resultSet.GetAsInt(4);
+            
+            return category;
+        }
+    }
+    catch (wxSQLite3Exception& e) {
+        wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+    }
+    
+    return nullptr;
+}
