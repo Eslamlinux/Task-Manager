@@ -46,3 +46,33 @@ RegisterDialog::RegisterDialog(wxWindow* parent, UserManager* userManager)
                                  wxDefaultSize, wxTE_PASSWORD);
     formSizer->Add(passwordCtrl, 0, wxEXPAND);
     
+    // Confirm Password
+    formSizer->Add(new wxStaticText(this, wxID_ANY, "Confirm Password:"), 0, wxALIGN_CENTER_VERTICAL);
+    confirmPasswordCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, 
+                                        wxDefaultSize, wxTE_PASSWORD);
+    formSizer->Add(confirmPasswordCtrl, 0, wxEXPAND);
+    
+    mainSizer->Add(formSizer, 0, wxALL | wxEXPAND, 15);
+    
+    // Buttons
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    
+    wxButton* registerButton = new wxButton(this, wxID_OK, "Register");
+    wxButton* cancelButton = new wxButton(this, wxID_CANCEL, "Cancel");
+    
+    buttonSizer->AddStretchSpacer();
+    buttonSizer->Add(registerButton, 0, wxRIGHT, 5);
+    buttonSizer->Add(cancelButton, 0);
+    
+    mainSizer->Add(buttonSizer, 0, wxALL | wxEXPAND, 15);
+    
+    SetSizer(mainSizer);
+    Centre();
+    
+    usernameCtrl->SetFocus();
+    registerButton->SetDefault();
+}
+
+RegisterDialog::~RegisterDialog() {
+}
+
