@@ -76,3 +76,53 @@ RegisterDialog::RegisterDialog(wxWindow* parent, UserManager* userManager)
 RegisterDialog::~RegisterDialog() {
 }
 
+void RegisterDialog::OnRegisterButton(wxCommandEvent& event) {
+    // Validate inputs
+    wxString username = usernameCtrl->GetValue().Trim();
+    wxString fullName = fullNameCtrl->GetValue().Trim();
+    wxString email = emailCtrl->GetValue().Trim();
+    wxString password = passwordCtrl->GetValue();
+    wxString confirmPassword = confirmPasswordCtrl->GetValue();
+    
+    if (username.IsEmpty()) {
+        wxMessageBox("Username cannot be empty.", "Validation Error", wxOK | wxICON_ERROR, this);
+        usernameCtrl->SetFocus();
+        return;
+    }
+    
+    if (fullName.IsEmpty()) {
+        wxMessageBox("Full name cannot be empty.", "Validation Error", wxOK | wxICON_ERROR, this);
+        fullNameCtrl->SetFocus();
+        return;
+    }
+    
+    if (email.IsEmpty()) {
+        wxMessageBox("Email cannot be empty.", "Validation Error", wxOK | wxICON_ERROR, this);
+        emailCtrl->SetFocus();
+        return;
+    }
+    
+    if (password.IsEmpty()) {
+        wxMessageBox("Password cannot be empty.", "Validation Error", wxOK | wxICON_ERROR, this);
+        passwordCtrl->SetFocus();
+        return;
+    }
+    
+    if (password != confirmPassword) {
+        wxMessageBox("Passwords do not match.", "Validation Error", wxOK | wxICON_ERROR, this);
+        confirmPasswordCtrl->SetFocus();
+        return;
+    }
+    
+    // Attempt to register user
+    if (userManager->RegisterUser(username, email, password, fullName)) {
+        wxMessageBox("Registration successful! You can now log in.", 
+                    "Registration Complete", wxOK | wxICON_INFORMATION, this);
+        this->username = username;
+        EndModal(wxID_OK);
+    }
+}
+
+void RegisterDialog::OnCancelButton(wxCommandEvent& event) {
+    EndModal(wxID_CANCEL);
+}
