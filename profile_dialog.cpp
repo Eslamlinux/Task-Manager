@@ -96,3 +96,24 @@ ProfileDialog::ProfileDialog(wxWindow* parent, UserManager* userManager)
     Centre();
 }
 
+ProfileDialog::~ProfileDialog() {
+}
+
+void ProfileDialog::OnSaveProfileButton(wxCommandEvent& event) {
+    wxString fullName = fullNameCtrl->GetValue().Trim();
+    wxString email = emailCtrl->GetValue().Trim();
+    
+    if (fullName.IsEmpty()) {
+        wxMessageBox("Full name cannot be empty.", 
+                    "Validation Error", wxOK | wxICON_ERROR, this);
+        fullNameCtrl->SetFocus();
+        return;
+    }
+    
+    if (email.IsEmpty()) {
+        wxMessageBox("Email cannot be empty.", 
+                    "Validation Error", wxOK | wxICON_ERROR, this);
+        emailCtrl->SetFocus();
+        return;
+    }
+    
