@@ -259,4 +259,86 @@ bool UserManager::ChangePassword(int userId, const wxString& oldPassword, const 
               return false;
           }
           
- 
+          // Generate new salt and hash for new password
+          wxString newSalt = GenerateSalt();
+          wxString newPasswordHash = HashPassword(newPassword, newSalt);
+          
+          // Update password
+          wxSQLite3Statement updateStmt = db->PrepareStatement(
+              "UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?"
+          );
+          
+          updateStmt.Bind(1, newPasswordHash);
+          updateStmt.Bind(2, newSalt);
+          updateStmt.Bind(3, userId);
+          
+          updateStmt.ExecuteUpdate();
+          
+          // Update current user if it's the same user
+          if (currentUser && currentUser->id == userId) {
+              currentUser->passwordHash = newPasswordHash;
+          }
+          
+          return true;
+      }
+      
+      return false;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in ChangePassword: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Password Change Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+}
+
+bool UserManager::DeleteUser(int userId) {
+  // Don't allow deleting the current user
+  if (currentUser && currentUser->id == userId) {
+      wxMessageBox("Cannot delete your own account while logged in.", 
+                  "Delete Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+  
+  try {
+      wxSQLite3Statement stmt = db->PrepareStatement("DELETE FROM users WHERE id = ?");
+      stmt.Bind(1, userId);
+      stmt.ExecuteUpdate();
+      return true;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in DeleteUser: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Delete Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+}
+
+std::vector<User> UserManager::GetAllUsers() {
+  std::vector<User> users;
+  
+  try {
+      wxSQLite3ResultSet resultSet = db->ExecuteQuery(
+          "SELECT id, username, email, password_hash, full_name, created_date, is_admin "
+          "FROM users ORDER BY username"
+      );
+      
+      while (resultSet.NextRow()) {
+          User user;
+          user.id = resultSet.GetAsInt(0);
+          user.username = resultSet.GetAsString(1);
+          user.email = resultSet.GetAsString(2);
+          user.passwordHash = resultSet.GetAsString(3);
+          user.fullName = resultSet.GetAsString(4);
+          user.createdDate = resultSet.GetAsString(5);
+          user.isAdmin = resultSet.GetAsBool(6);
+          
+          users.push_back(user);
+      }
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in GetAllUsers: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+  }
+  
+  return users;
+}
+
