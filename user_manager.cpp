@@ -211,3 +211,52 @@ bool UserManager::RegisterUser(const wxString& username, const wxString& email,
   }
 }
 
+bool UserManager::UpdateUser(int userId, const wxString& email, const wxString& fullName) {
+  try {
+      wxSQLite3Statement stmt = db->PrepareStatement(
+          "UPDATE users SET email = ?, full_name = ? WHERE id = ?"
+      );
+      
+      stmt.Bind(1, email);
+      stmt.Bind(2, fullName);
+      stmt.Bind(3, userId);
+      
+      stmt.ExecuteUpdate();
+      
+      // Update current user if it's the same user
+      if (currentUser && currentUser->id == userId) {
+          currentUser->email = email;
+          currentUser->fullName = fullName;
+      }
+      
+      return true;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in UpdateUser: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Update Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+}
+
+bool UserManager::ChangePassword(int userId, const wxString& oldPassword, const wxString& newPassword) {
+  try {
+      // Verify old password first
+      wxSQLite3Statement verifyStmt = db->PrepareStatement(
+          "SELECT password_hash, password_salt FROM users WHERE id = ?"
+      );
+      
+      verifyStmt.Bind(1, userId);
+      wxSQLite3ResultSet verifyResult = verifyStmt.ExecuteQuery();
+      
+      if (verifyResult.NextRow()) {
+          wxString storedHash = verifyResult.GetAsString(0);
+          wxString salt = verifyResult.GetAsString(1);
+          wxString computedHash = HashPassword(oldPassword, salt);
+          
+          if (storedHash != computedHash) {
+              wxMessageBox("Current password is incorrect.", 
+                          "Password Change Error", wxOK | wxICON_ERROR);
+              return false;
+          }
+          
+ 
