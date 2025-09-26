@@ -33,4 +33,23 @@ ProfileDialog::ProfileDialog(wxWindow* parent, UserManager* userManager)
     usernameCtrl = new wxTextCtrl(profileSizer->GetStaticBox(), wxID_ANY, user->username, 
                                  wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
     profileFormSizer->Add(usernameCtrl, 0, wxEXPAND);
-
+    
+    // Full Name
+    profileFormSizer->Add(new wxStaticText(profileSizer->GetStaticBox(), wxID_ANY, "Full Name:"), 
+                         0, wxALIGN_CENTER_VERTICAL);
+    fullNameCtrl = new wxTextCtrl(profileSizer->GetStaticBox(), wxID_ANY, user->fullName);
+    profileFormSizer->Add(fullNameCtrl, 0, wxEXPAND);
+    
+    // Email
+    profileFormSizer->Add(new wxStaticText(profileSizer->GetStaticBox(), wxID_ANY, "Email:"), 
+                         0, wxALIGN_CENTER_VERTICAL);
+    emailCtrl = new wxTextCtrl(profileSizer->GetStaticBox(), wxID_ANY, user->email);
+    profileFormSizer->Add(emailCtrl, 0, wxEXPAND);
+    
+    profileSizer->Add(profileFormSizer, 0, wxALL | wxEXPAND, 10);
+    
+    wxButton* saveProfileButton = new wxButton(profileSizer->GetStaticBox(), wxID_SAVE, "Save Profile");
+    profileSizer->Add(saveProfileButton, 0, wxALL | wxALIGN_RIGHT, 10);
+    
+    mainSizer->Add(profileSizer, 0, wxALL | wxEXPAND, 10);
+    
