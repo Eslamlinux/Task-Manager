@@ -111,3 +111,40 @@ void CategoryListDialog::OnAddButton(wxCommandEvent& event) {
     }
 }
 
+void CategoryListDialog::OnEditButton(wxCommandEvent& event) {
+    EditCategory(categoryList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
+}
+
+void CategoryListDialog::OnDeleteButton(wxCommandEvent& event) {
+    int index = categoryList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+    if (index == -1) return;
+    
+    int categoryId = categoryList->GetItemData(index);
+    wxString categoryName = categoryList->GetItemText(index, 1);
+    
+    wxMessageDialog confirmDlg(this, 
+                             wxString::Format("Are you sure you want to delete the category '%s'?\n"
+                                             "Tasks with this category will be set to 'No Category'.", 
+                                             categoryName),
+                             "Confirm Delete", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+    
+    if (confirmDlg.ShowModal() == wxID_YES) {
+        if (categoryManager->DeleteCategory(categoryId)) {
+            LoadCategories();
+        }
+    }
+}
+
+void CategoryListDialog::OnCloseButton(wxCommandEvent& event) {
+    EndModal(wxID_OK);
+}
+
+void CategoryListDialog::OnListItemSelected(wxListEvent& event) {
+    wxWindow* editButton = FindWindow(wxID_EDIT);
+    wxWindow* deleteButton = FindWindow(wxID_DELETE);
+    
+    if (editButton && deleteButton) {
+        editButton->Enable();
+        deleteButton->Enable();
+    }
+}
