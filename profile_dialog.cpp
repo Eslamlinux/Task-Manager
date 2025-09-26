@@ -67,4 +67,32 @@ ProfileDialog::ProfileDialog(wxWindow* parent, UserManager* userManager)
                                         wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
     passwordFormSizer->Add(currentPasswordCtrl, 0, wxEXPAND);
     
- 
+    // New Password
+    passwordFormSizer->Add(new wxStaticText(passwordSizer->GetStaticBox(), wxID_ANY, "New Password:"), 
+                          0, wxALIGN_CENTER_VERTICAL);
+    newPasswordCtrl = new wxTextCtrl(passwordSizer->GetStaticBox(), wxID_ANY, wxEmptyString, 
+                                    wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
+    passwordFormSizer->Add(newPasswordCtrl, 0, wxEXPAND);
+    
+    // Confirm New Password
+    passwordFormSizer->Add(new wxStaticText(passwordSizer->GetStaticBox(), wxID_ANY, "Confirm New Password:"), 
+                          0, wxALIGN_CENTER_VERTICAL);
+    confirmPasswordCtrl = new wxTextCtrl(passwordSizer->GetStaticBox(), wxID_ANY, wxEmptyString, 
+                                        wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
+    passwordFormSizer->Add(confirmPasswordCtrl, 0, wxEXPAND);
+    
+    passwordSizer->Add(passwordFormSizer, 0, wxALL | wxEXPAND, 10);
+    
+    wxButton* changePasswordButton = new wxButton(passwordSizer->GetStaticBox(), wxID_APPLY, "Change Password");
+    passwordSizer->Add(changePasswordButton, 0, wxALL | wxALIGN_RIGHT, 10);
+    
+    mainSizer->Add(passwordSizer, 0, wxALL | wxEXPAND, 10);
+    
+    // Close Button
+    wxButton* closeButton = new wxButton(this, wxID_CANCEL, "Close");
+    mainSizer->Add(closeButton, 0, wxALL | wxALIGN_RIGHT, 10);
+    
+    SetSizer(mainSizer);
+    Centre();
+}
+
