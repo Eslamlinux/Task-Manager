@@ -75,3 +75,35 @@ CategoryDialog::CategoryDialog(wxWindow* parent, CategoryManager* categoryManage
 CategoryDialog::~CategoryDialog() {
 }
 
+void CategoryDialog::OnSaveButton(wxCommandEvent& event) {
+    wxString name = nameCtrl->GetValue().Trim();
+    wxColour color = colorCtrl->GetColour();
+    wxString colorStr = color.GetAsString(wxC2S_HTML_SYNTAX);
+    wxString description = descriptionCtrl->GetValue().Trim();
+    
+    if (name.IsEmpty()) {
+        wxMessageBox("Category name cannot be empty.", 
+                    "Validation Error", wxOK | wxICON_ERROR, this);
+        nameCtrl->SetFocus();
+        return;
+    }
+    
+    bool success = false;
+    
+    if (categoryId == -1) {
+        // Add new category
+        success = categoryManager->AddCategory(name, colorStr, description, userId);
+    }
+    else {
+        // Update existing category
+        success = categoryManager->UpdateCategory(categoryId, name, colorStr, description);
+    }
+    
+    if (success) {
+        EndModal(wxID_OK);
+    }
+}
+
+void CategoryDialog::OnCancelButton(wxCommandEvent& event) {
+    EndModal(wxID_CANCEL);
+}
