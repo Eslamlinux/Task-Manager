@@ -342,3 +342,65 @@ std::vector<User> UserManager::GetAllUsers() {
   return users;
 }
 
+User* UserManager::GetUserById(int userId) {
+  try {
+      wxSQLite3Statement stmt = db->PrepareStatement(
+          "SELECT id, username, email, password_hash, full_name, created_date, is_admin "
+          "FROM users WHERE id = ?"
+      );
+      
+      stmt.Bind(1, userId);
+      wxSQLite3ResultSet resultSet = stmt.ExecuteQuery();
+      
+      if (resultSet.NextRow()) {
+          User* user = new User();
+          user->id = resultSet.GetAsInt(0);
+          user->username = resultSet.GetAsString(1);
+          user->email = resultSet.GetAsString(2);
+          user->passwordHash = resultSet.GetAsString(3);
+          user->fullName = resultSet.GetAsString(4);
+          user->createdDate = resultSet.GetAsString(5);
+          user->isAdmin = resultSet.GetAsBool(6);
+          
+          return user;
+      }
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in GetUserById: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+  }
+  
+  return nullptr;
+}
+
+User* UserManager::GetUserByUsername(const wxString& username) {
+  try {
+      wxSQLite3Statement stmt = db->PrepareStatement(
+          "SELECT id, username, email, password_hash, full_name, created_date, is_admin "
+          "FROM users WHERE username = ?"
+      );
+      
+      stmt.Bind(1, username);
+      wxSQLite3ResultSet resultSet = stmt.ExecuteQuery();
+      
+      if (resultSet.NextRow()) {
+          User* user = new User();
+          user->id = resultSet.GetAsInt(0);
+          user->username = resultSet.GetAsString(1);
+          user->email = resultSet.GetAsString(2);
+          user->passwordHash = resultSet.GetAsString(3);
+          user->fullName = resultSet.GetAsString(4);
+          user->createdDate = resultSet.GetAsString(5);
+          user->isAdmin = resultSet.GetAsBool(6);
+          
+          return user;
+      }
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in GetUserByUsername: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Database Error", wxOK | wxICON_ERROR);
+  }
+  
+  return nullptr;
+}
+
