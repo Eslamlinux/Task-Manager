@@ -18,3 +18,19 @@ ProfileDialog::ProfileDialog(wxWindow* parent, UserManager* userManager)
         return;
     }
     
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+    
+    // Profile Information
+    wxStaticBoxSizer* profileSizer = new wxStaticBoxSizer(
+        new wxStaticBox(this, wxID_ANY, "Profile Information"), wxVERTICAL);
+    
+    wxFlexGridSizer* profileFormSizer = new wxFlexGridSizer(3, 2, 10, 10);
+    profileFormSizer->AddGrowableCol(1);
+    
+    // Username (readonly)
+    profileFormSizer->Add(new wxStaticText(profileSizer->GetStaticBox(), wxID_ANY, "Username:"), 
+                         0, wxALIGN_CENTER_VERTICAL);
+    usernameCtrl = new wxTextCtrl(profileSizer->GetStaticBox(), wxID_ANY, user->username, 
+                                 wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+    profileFormSizer->Add(usernameCtrl, 0, wxEXPAND);
+
