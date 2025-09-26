@@ -158,4 +158,6 @@ void ProfileDialog::OnChangePasswordButton(wxCommandEvent& event) {
     }
 }
 
-v
+void ProfileDialog::OnCancelButton(wxCommandEvent& event) {
+    EndModal(wxID_CANCEL);
+}
