@@ -28,3 +28,27 @@ CategoryDialog::CategoryDialog(wxWindow* parent, CategoryManager* categoryManage
     formSizer->Add(new wxStaticText(this, wxID_ANY, "Color:"), 0, wxALIGN_CENTER_VERTICAL);
     colorCtrl = new wxColourPickerCtrl(this, wxID_ANY);
     formSizer->Add(colorCtrl, 0, wxEXPAND);
+    
+    // Description
+    formSizer->Add(new wxStaticText(this, wxID_ANY, "Description:"), 0, wxALIGN_CENTER_VERTICAL);
+    descriptionCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, 
+                                    wxSize(-1, 80), wxTE_MULTILINE);
+    formSizer->Add(descriptionCtrl, 0, wxEXPAND);
+    
+    mainSizer->Add(formSizer, 0, wxALL | wxEXPAND, 20);
+    
+    // Buttons
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    
+    wxButton* saveButton = new wxButton(this, wxID_SAVE, "Save");
+    wxButton* cancelButton = new wxButton(this, wxID_CANCEL, "Cancel");
+    
+    buttonSizer->AddStretchSpacer();
+    buttonSizer->Add(saveButton, 0, wxRIGHT, 5);
+    buttonSizer->Add(cancelButton, 0);
+    
+    mainSizer->Add(buttonSizer, 0, wxALL | wxEXPAND, 20);
+    
+    SetSizer(mainSizer);
+    Centre();
+    
