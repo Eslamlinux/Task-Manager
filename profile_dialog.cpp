@@ -117,3 +117,45 @@ void ProfileDialog::OnSaveProfileButton(wxCommandEvent& event) {
         return;
     }
     
+    if (userManager->UpdateUser(user->id, email, fullName)) {
+        wxMessageBox("Profile updated successfully.", 
+                    "Profile Updated", wxOK | wxICON_INFORMATION, this);
+    }
+}
+
+void ProfileDialog::OnChangePasswordButton(wxCommandEvent& event) {
+    wxString currentPassword = currentPasswordCtrl->GetValue();
+    wxString newPassword = newPasswordCtrl->GetValue();
+    wxString confirmPassword = confirmPasswordCtrl->GetValue();
+    
+    if (currentPassword.IsEmpty()) {
+        wxMessageBox("Current password cannot be empty.", 
+                    "Validation Error", wxOK | wxICON_ERROR, this);
+        currentPasswordCtrl->SetFocus();
+        return;
+    }
+    
+    if (newPassword.IsEmpty()) {
+        wxMessageBox("New password cannot be empty.", 
+                    "Validation Error", wxOK | wxICON_ERROR, this);
+        newPasswordCtrl->SetFocus();
+        return;
+    }
+    
+    if (newPassword != confirmPassword) {
+        wxMessageBox("New passwords do not match.", 
+                    "Validation Error", wxOK | wxICON_ERROR, this);
+        confirmPasswordCtrl->SetFocus();
+        return;
+    }
+    
+    if (userManager->ChangePassword(user->id, currentPassword, newPassword)) {
+        wxMessageBox("Password changed successfully.", 
+                    "Password Changed", wxOK | wxICON_INFORMATION, this);
+        currentPasswordCtrl->Clear();
+        newPasswordCtrl->Clear();
+        confirmPasswordCtrl->Clear();
+    }
+}
+
+v
