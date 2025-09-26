@@ -136,4 +136,78 @@ bool UserManager::Login(const wxString& username, const wxString& password) {
           }
       }
       
-   
+      // Authentication failed
+      return false;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in Login: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Login Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+}
+
+void UserManager::Logout() {
+  currentUser.reset();
+}
+
+bool UserManager::RegisterUser(const wxString& username, const wxString& email, 
+                         const wxString& password, const wxString& fullName, 
+                         bool isAdmin) {
+  std::cout << "RegisterUser - Starting registration for user: " << username.ToStdString() << std::endl;
+  try {
+      // Check if username already exists
+      wxSQLite3Statement checkStmt = db->PrepareStatement(
+          "SELECT COUNT(*) FROM users WHERE username = ?"
+      );
+      
+      checkStmt.Bind(1, username);
+      wxSQLite3ResultSet checkResult = checkStmt.ExecuteQuery();
+      
+      if (checkResult.NextRow() && checkResult.GetAsInt(0) > 0) {
+          wxMessageBox("Username already exists. Please choose a different username.", 
+                      "Registration Error", wxOK | wxICON_ERROR);
+          return false;
+      }
+      
+      // Generate salt and hash password
+      wxString salt = GenerateSalt();
+      wxString passwordHash = HashPassword(password, salt);
+      
+      // Get current timestamp
+      wxDateTime now = wxDateTime::Now();
+      wxString createdDate = now.FormatISODate() + " " + now.FormatISOTime();
+      
+      std::cout << "RegisterUser - Inserting new user" << std::endl;
+      // Insert new user
+      wxSQLite3Statement stmt = db->PrepareStatement(
+          "INSERT INTO users (username, email, password_hash, password_salt, full_name, created_date, is_admin) "
+          "VALUES (?, ?, ?, ?, ?, ?, ?)"
+      );
+      
+      stmt.Bind(1, username);
+      stmt.Bind(2, email);
+      stmt.Bind(3, passwordHash);
+      stmt.Bind(4, salt);
+      stmt.Bind(5, fullName);
+      stmt.Bind(6, createdDate);
+      stmt.Bind(7, isAdmin ? 1 : 0);
+      
+      stmt.ExecuteUpdate();
+      std::cout << "RegisterUser - User registered successfully" << std::endl;
+      return true;
+  }
+  catch (wxSQLite3Exception& e) {
+      std::cerr << "Database error in RegisterUser: " << e.GetMessage().ToStdString() << std::endl;
+      wxMessageBox(e.GetMessage(), "Registration Error", wxOK | wxICON_ERROR);
+      return false;
+  }
+  catch (std::exception& e) {
+      std::cerr << "Standard exception in RegisterUser: " << e.what() << std::endl;
+      return false;
+  }
+  catch (...) {
+      std::cerr << "Unknown exception in RegisterUser" << std::endl;
+      return false;
+  }
+}
+
