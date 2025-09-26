@@ -148,3 +148,7 @@ void CategoryListDialog::OnListItemSelected(wxListEvent& event) {
         deleteButton->Enable();
     }
 }
+
+void CategoryListDialog::OnListItemActivated(wxListEvent& event) {
+    EditCategory(event.GetIndex());
+}
