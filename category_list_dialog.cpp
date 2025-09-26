@@ -89,3 +89,25 @@ void CategoryListDialog::LoadCategories() {
     }
 }
 
+void CategoryListDialog::EditCategory(int index) {
+    if (index == -1) return;
+    
+    int categoryId = categoryList->GetItemData(index);
+    Category* category = categoryManager->GetCategoryById(categoryId);
+    
+    if (category) {
+        CategoryDialog dlg(this, categoryManager, userManager->GetCurrentUser()->id, category);
+        if (dlg.ShowModal() == wxID_OK) {
+            LoadCategories();
+        }
+        delete category;
+    }
+}
+
+void CategoryListDialog::OnAddButton(wxCommandEvent& event) {
+    CategoryDialog dlg(this, categoryManager, userManager->GetCurrentUser()->id);
+    if (dlg.ShowModal() == wxID_OK) {
+        LoadCategories();
+    }
+}
+
