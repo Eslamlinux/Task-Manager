@@ -22,3 +22,24 @@ wxString SimpleSHA256(const wxString& input) {
   ss << std::hex << std::setfill('0') << std::setw(8) << hash;
   return wxString(ss.str());
 }
+
+UserManager::UserManager(wxSQLite3Database* database) : db(database), currentUser(nullptr) {
+  std::cout << "UserManager constructor - Starting initialization" << std::endl;
+  
+  if (!database) {
+    std::cerr << "ERROR: Database pointer is null in UserManager constructor" << std::endl;
+    return;
+  }
+  
+  std::cout << "UserManager constructor - Database pointer is valid" << std::endl;
+  
+  try {
+    InitializeUserTable();
+    std::cout << "UserManager constructor - User table initialized successfully" << std::endl;
+  } catch (std::exception& e) {
+    std::cerr << "Exception in UserManager constructor: " << e.what() << std::endl;
+  } catch (...) {
+    std::cerr << "Unknown exception in UserManager constructor" << std::endl;
+  }
+}
+
