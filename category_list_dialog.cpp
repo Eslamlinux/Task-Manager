@@ -29,3 +29,25 @@ CategoryListDialog::CategoryListDialog(wxWindow* parent, CategoryManager* catego
     
     mainSizer->Add(categoryList, 1, wxALL | wxEXPAND, 10);
     
+    // Buttons
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    
+    wxButton* addButton = new wxButton(this, wxID_ADD, "Add");
+    wxButton* editButton = new wxButton(this, wxID_EDIT, "Edit");
+    wxButton* deleteButton = new wxButton(this, wxID_DELETE, "Delete");
+    wxButton* closeButton = new wxButton(this, wxID_CLOSE, "Close");
+    
+    buttonSizer->Add(addButton, 0, wxRIGHT, 5);
+    buttonSizer->Add(editButton, 0, wxRIGHT, 5);
+    buttonSizer->Add(deleteButton, 0, wxRIGHT, 5);
+    buttonSizer->AddStretchSpacer();
+    buttonSizer->Add(closeButton, 0);
+    
+    mainSizer->Add(buttonSizer, 0, wxALL | wxEXPAND, 10);
+    
+    SetSizer(mainSizer);
+    
+    // Initially disable edit and delete buttons
+    editButton->Disable();
+    deleteButton->Disable();
+    
