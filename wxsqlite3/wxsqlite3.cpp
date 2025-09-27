@@ -342,3 +342,22 @@ wxSQLite3ResultSet wxSQLite3Database::ExecuteQuery(const wxString& sql) {
     
     return wxSQLite3ResultSet(stmt.m_stmt, this);
 }
+
+int wxSQLite3Database::ExecuteUpdate(const wxString& sql) {
+    if (m_db == nullptr) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Database not open");
+    }
+    
+    wxCharBuffer sqlBuffer = sql.ToUTF8();
+    char* errmsg = nullptr;
+    
+    int rc = sqlite3_exec(m_db, sqlBuffer, nullptr, nullptr, &errmsg);
+    
+    if (rc != SQLITE_OK) {
+        wxString error = wxString::FromUTF8(errmsg);
+        sqlite3_free(errmsg);
+        throw wxSQLite3Exception(rc, error);
+    }
+    
+    return sqlite3_changes(m_db);
+}
