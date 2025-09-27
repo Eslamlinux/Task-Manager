@@ -343,6 +343,7 @@ wxSQLite3ResultSet wxSQLite3Database::ExecuteQuery(const wxString& sql) {
     return wxSQLite3ResultSet(stmt.m_stmt, this);
 }
 
+
 int wxSQLite3Database::ExecuteUpdate(const wxString& sql) {
     if (m_db == nullptr) {
         throw wxSQLite3Exception(SQLITE_ERROR, "Database not open");
