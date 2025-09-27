@@ -325,3 +325,20 @@ wxSQLite3Statement wxSQLite3Database::PrepareStatement(const wxString& sql) {
     
     return wxSQLite3Statement(stmt, this);
 }
+
+wxSQLite3ResultSet wxSQLite3Database::ExecuteQuery(const wxString& sql) {
+    wxSQLite3Statement stmt = PrepareStatement(sql);
+    
+    if (!stmt.IsValid()) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Could not prepare statement");
+    }
+    
+    int rc = sqlite3_step(stmt.m_stmt);
+    
+    if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
+        wxString errmsg = wxString::FromUTF8(sqlite3_errmsg(m_db));
+        throw wxSQLite3Exception(rc, errmsg);
+    }
+    
+    return wxSQLite3ResultSet(stmt.m_stmt, this);
+}
