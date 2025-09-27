@@ -299,3 +299,29 @@ void wxSQLite3Database::Open(const wxString& fileName) {
     
     m_isOpen = true;
 }
+
+void wxSQLite3Database::Close() {
+    if (m_db != nullptr) {
+        sqlite3_close(m_db);
+        m_db = nullptr;
+    }
+    m_isOpen = false;
+}
+
+wxSQLite3Statement wxSQLite3Database::PrepareStatement(const wxString& sql) {
+    if (m_db == nullptr) {
+        throw wxSQLite3Exception(SQLITE_ERROR, "Database not open");
+    }
+    
+    wxCharBuffer sqlBuffer = sql.ToUTF8();
+    sqlite3_stmt* stmt = nullptr;
+    
+    int rc = sqlite3_prepare_v2(m_db, sqlBuffer, -1, &stmt, nullptr);
+    
+    if (rc != SQLITE_OK) {
+        wxString errmsg = wxString::FromUTF8(sqlite3_errmsg(m_db));
+        throw wxSQLite3Exception(rc, errmsg);
+    }
+    
+    return wxSQLite3Statement(stmt, this);
+}
