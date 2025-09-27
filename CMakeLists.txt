@@ -10,3 +10,9 @@ include(${wxWidgets_USE_FILE})
 
 # Find SQLite3
 find_package(SQLite3 REQUIRED)
+
+# Add wxSQLite3 library
+add_library(wxsqlite3 STATIC
+  wxsqlite3/wxsqlite3.cpp
+)
+
