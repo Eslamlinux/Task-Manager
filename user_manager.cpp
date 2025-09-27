@@ -449,8 +449,8 @@ bool UserManager::CreateDefaultAdminIfNeeded() {
       if (!hasUsers) {
           // No users exist, create default admin
           std::cout << "CreateDefaultAdminIfNeeded - No users found, creating default admin" << std::endl;
-          return RegisterUser("eslamlinux", "Linuxeslam@gmail.com", 
-                            "eslamlinux123", "Administrator", true);
+          return RegisterUser("eslam", "Linuxeslam@gmail.com", 
+                            "eslamlinux123", "Eslam Linux", true);
       }
       
       std::cout << "CreateDefaultAdminIfNeeded - Users already exist" << std::endl;
