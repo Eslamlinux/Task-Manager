@@ -119,4 +119,5 @@ public:
     sqlite3* GetDatabaseHandle() const { return m_db; }
 };
 
+
 #endif // WXSQLITE3_H
