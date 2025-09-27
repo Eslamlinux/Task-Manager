@@ -37,3 +37,11 @@ set(SOURCES
   category_list_dialog.cpp
   profile_dialog.cpp
 )
+
+# Add executable
+add_executable(TaskManager ${SOURCES})
+
+target_link_libraries(TaskManager
+  ${wxWidgets_LIBRARIES}
+  wxsqlite3
+)
