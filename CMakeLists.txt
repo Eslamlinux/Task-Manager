@@ -16,3 +16,8 @@ add_library(wxsqlite3 STATIC
   wxsqlite3/wxsqlite3.cpp
 )
 
+target_include_directories(wxsqlite3 PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/wxsqlite3
+  ${SQLite3_INCLUDE_DIRS}
+)
+
