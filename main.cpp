@@ -1761,7 +1761,7 @@ void MainFrame::OnExit(wxCommandEvent& event) {
 }
 
 void MainFrame::OnAbout(wxCommandEvent& event) {
-  wxMessageBox("Task Manager Application\n\nA complete task management system with user authentication, task categories, and data import/export capabilities.\n\nVersion 1.0", 
+  wxMessageBox("Task Manager Application\n\nA Demo task management system with user authentication, task categories, and data import/export capabilities , made by Eslamlinux .\nmore info about the project vist: \nhttps://github.com/Eslamlinux/Task-Manager/\nVersion 1.0 beta", 
               "About Task Manager", wxOK | wxICON_INFORMATION);
 }
 
