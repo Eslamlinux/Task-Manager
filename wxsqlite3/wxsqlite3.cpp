@@ -287,3 +287,15 @@ void wxSQLite3Database::Open(const wxString& fileName) {
         Close();
     }
     
+    wxCharBuffer fileNameBuffer = fileName.ToUTF8();
+    int rc = sqlite3_open(fileNameBuffer, &m_db);
+    
+    if (rc != SQLITE_OK) {
+        wxString errmsg = wxString::FromUTF8(sqlite3_errmsg(m_db));
+        sqlite3_close(m_db);
+        m_db = nullptr;
+        throw wxSQLite3Exception(rc, errmsg);
+    }
+    
+    m_isOpen = true;
+}
