@@ -21,3 +21,19 @@ target_include_directories(wxsqlite3 PUBLIC
   ${SQLite3_INCLUDE_DIRS}
 )
 
+target_link_libraries(wxsqlite3
+  ${SQLite3_LIBRARIES}
+  ${wxWidgets_LIBRARIES}
+)
+
+# Source files
+set(SOURCES
+  main.cpp
+  user_manager.cpp
+  login_dialog.cpp
+  register_dialog.cpp
+  category_manager.cpp
+  category_dialog.cpp
+  category_list_dialog.cpp
+  profile_dialog.cpp
+)
